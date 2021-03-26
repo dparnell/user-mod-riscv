@@ -247,12 +247,20 @@ impl Cpu {
                 _ => None
             },
 
-            0b1110011 => match word {
-                0b00000000000000000000000001110011 => Some(&ECALL),
-                0b00000000000100000000000001110011 => Some(&EBREAK),
+            0b1110011 => match (word >> 12) & 7 {
+                0b000 => match word {
+                    0b00000000000000000000000001110011 => Some(&ECALL),
+                    0b00000000000100000000000001110011 => Some(&EBREAK),
+                    _ => None
+                },
+                0b001 => Some(&UNIMPLEMENTED), // CSRRW
+                0b010 => Some(&UNIMPLEMENTED), // CSRRS
+                0b011 => Some(&UNIMPLEMENTED), // CSRRC
+                0b101 => Some(&UNIMPLEMENTED), // CSRRWI
+                0b110 => Some(&UNIMPLEMENTED), // CSRRSI
+                0b111 => Some(&UNIMPLEMENTED), // CSRRCI
                 _ => None
             },
-
             _ => None
         }
     }
@@ -867,6 +875,15 @@ fn parse_format_s(word: u32) -> FormatS {
         ) as i32 as i64
     }
 }
+
+const UNIMPLEMENTED: Instruction = Instruction {
+    operation: |_cpu, word, _address| {
+        Err(Trap{
+            trap_type: TrapType::IllegalInstruction,
+            value: word as u64
+        })
+    }
+};
 
 const ADD: Instruction = Instruction {
     operation: |cpu, word, _address| {
