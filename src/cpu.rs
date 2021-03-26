@@ -152,8 +152,17 @@ impl Cpu {
 
             0b0010011 => match (word >> 12) & 7 {
                 0b000 => Some(&ADDI),
+                0b010 => Some(&SLTI),
+                0b011 => Some(&SLTIU),
+                0b100 => Some(&XORI),
+                0b110 => Some(&ORI),
+                0b111 => Some(&ANDI),
+                0b001 => Some(&SLLI),
+                0b101 => Some(&SRLI),
+                0b101 => Some(&SRAI),
                 _ => None
-            }
+            },
+
             _ => None
         }
     }
@@ -785,6 +794,22 @@ const ADDI: Instruction = Instruction {
     }
 };
 
+const AND: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] & cpu.x[f.rs2]);
+        Ok(())
+    }
+};
+
+const ANDI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] & f.imm);
+        Ok(())
+    }
+};
+
 const AUIPC: Instruction = Instruction {
     operation: |cpu, word, address| {
         let f = parse_format_u(word);
@@ -950,6 +975,22 @@ const LWU: Instruction = Instruction {
     }
 };
 
+const OR: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] | cpu.x[f.rs2]);
+        Ok(())
+    }
+};
+
+const ORI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] | f.imm);
+        Ok(())
+    }
+};
+
 const SB: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_s(word);
@@ -983,6 +1024,122 @@ const SH: Instruction = Instruction {
     }
 };
 
+const SLL: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_shl(cpu.x[f.rs2] as u32));
+        Ok(())
+    }
+};
+
+const SLLI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let mask = match cpu.xlen {
+            Xlen::Bit32 => 0x1f,
+            Xlen::Bit64 => 0x3f
+        };
+        let shamt = (word >> 20) & mask;
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] << shamt);
+        Ok(())
+    }
+};
+
+const SLLIW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let shamt = f.rs2 as u32;
+        cpu.x[f.rd] = (cpu.x[f.rs1] << shamt) as i32 as i64;
+        Ok(())
+    }
+};
+
+const SLLW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = (cpu.x[f.rs1] as u32).wrapping_shl(cpu.x[f.rs2] as u32) as i32 as i64;
+        Ok(())
+    }
+};
+
+const SLTI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = match cpu.x[f.rs1] < f.imm {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+const SLT: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = match cpu.x[f.rs1] < cpu.x[f.rs2] {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+const SLTIU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = match cpu.unsigned_data(cpu.x[f.rs1]) < cpu.unsigned_data(f.imm) {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+const SLTU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = match cpu.unsigned_data(cpu.x[f.rs1]) < cpu.unsigned_data(cpu.x[f.rs2]) {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+const SRA: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_shr(cpu.x[f.rs2] as u32));
+        Ok(())
+    }
+};
+
+const SRAI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let mask = match cpu.xlen {
+            Xlen::Bit32 => 0x1f,
+            Xlen::Bit64 => 0x3f
+        };
+        let shamt = (word >> 20) & mask;
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] >> shamt);
+        Ok(())
+    }
+};
+
+const SRLI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let mask = match cpu.xlen {
+            Xlen::Bit32 => 0x1f,
+            Xlen::Bit64 => 0x3f
+        };
+        let shamt = (word >> 20) & mask;
+        cpu.x[f.rd] = cpu.sign_extend((cpu.unsigned_data(cpu.x[f.rs1]) >> shamt) as i64);
+        Ok(())
+    }
+};
+
 const SW: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_s(word);
@@ -990,6 +1147,22 @@ const SW: Instruction = Instruction {
         unsafe {
             *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u32) = cpu.x[f.rs2] as u32;
         }
+        Ok(())
+    }
+};
+
+const XOR: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] ^ cpu.x[f.rs2]);
+        Ok(())
+    }
+};
+
+const XORI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] ^ f.imm);
         Ok(())
     }
 };
