@@ -209,6 +209,38 @@ impl Cpu {
                 _ => None
             },
 
+            0b0011011 => match (word >> 12) & 7 {
+                0b000 => Some(&ADDIW),
+                0b001 => match word >> 25 {
+                    0b0000000 =>Some(&SLLIW),
+                    _ => None
+                },
+                0b101 => match word >> 25 {
+                    0b0000000 => Some(&SRLIW),
+                    0b0100000 => Some(&SRAIW),
+                    _ => None
+                },
+                _ => None
+            },
+
+            0b0111011 => match (word >> 12) & 7 {
+                0b000 => match word >> 25 {
+                    0b0000000 => Some(&ADDW),
+                    0b0100000 => Some(&SUBW),
+                    _ => None
+                },
+                0b001 => match word >> 25 {
+                    0b0000000 => Some(&SLLW),
+                    _ => None
+                },
+                0b101 => match word >> 25 {
+                    0b0000000 => Some(&SRLW),
+                    0b0100000 => Some(&SRAW),
+                    _ => None
+                },
+                _ => None
+            },
+
             0b0001111 => match (word >> 12) & 7 {
                 0b000 => Some(&FENCE),
                 _ => None
@@ -1227,6 +1259,24 @@ const SRAI: Instruction = Instruction {
         Ok(())
     }
 };
+
+const SRAIW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let shamt = ((word >> 20) & 0x1f) as u32;
+        cpu.x[f.rd] = ((cpu.x[f.rs1] as i32) >> shamt) as i64;
+        Ok(())
+    }
+};
+
+const SRAW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = (cpu.x[f.rs1] as i32).wrapping_shr(cpu.x[f.rs2] as u32) as i64;
+        Ok(())
+    }
+};
+
 
 const SRL: Instruction = Instruction {
     operation: |cpu, word, _address| {
