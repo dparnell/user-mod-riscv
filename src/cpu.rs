@@ -218,7 +218,19 @@ impl Cpu {
                     _ => None
                 },
                 _ => None
-            }
+            },
+
+            0b0001111 => match (word >> 12) & 7 {
+                0b000 => Some(&FENCE),
+                _ => None
+            },
+
+            0b1110011 => match word {
+                0b00000000000000000000000001110011 => Some(&ECALL),
+                0b00000000000100000000000001110011 => Some(&EBREAK),
+                _ => None
+            },
+
             _ => None
         }
     }
@@ -930,6 +942,34 @@ const BNE: Instruction = Instruction {
         if cpu.sign_extend(cpu.x[f.rs1]) != cpu.sign_extend(cpu.x[f.rs2]) {
             cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
         }
+        Ok(())
+    }
+};
+
+const EBREAK: Instruction = Instruction {
+    operation: |_cpu, _word, _address| {
+        // TODO: implement debugger?
+        Ok(())
+    }
+};
+
+const ECALL: Instruction = Instruction {
+    operation: |_cpu, _word, _address| {
+        // TODO: call out to host application
+        Ok(())
+    }
+};
+
+const FENCE: Instruction = Instruction {
+    operation: |_cpu, _word, _address| {
+        // Do nothing
+        Ok(())
+    }
+};
+
+const FENCE_I: Instruction = Instruction {
+    operation: |_cpu, _word, _address| {
+        // Do nothing
         Ok(())
     }
 };
