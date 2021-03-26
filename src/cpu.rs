@@ -174,36 +174,44 @@ impl Cpu {
             0b0110011 => match (word >> 12) & 7 {
                 0b000 => match word >> 25 {
                     0b0000000 => Some(&ADD),
+                    0b0000001 => Some(&MUL),
                     0b0100000 => Some(&SUB),
                     _ => None
                 },
                 0b001 => match word >> 25 {
                     0b0000000 => Some(&SLL),
+                    0b0000001 => Some(&MULH),
                     _ => None
                 },
                 0b010 => match word >> 25 {
                     0b0000000 => Some(&SLT),
+                    0b0000001 => Some(&MULHSU),
                     _ => None
                 },
                 0b011 => match word >> 25 {
                     0b0000000 => Some(&SLTU),
+                    0b0000001 => Some(&MULHU),
                     _ => None
                 },
                 0b100 => match word >> 25 {
                     0b0000000 => Some(&XOR),
+                    0b0000001 => Some(&DIV),
                     _ => None
                 ,}
                 0b111 => match word >> 25 {
                     0b0000000 => Some(&AND),
+                    0b0000001 => Some(&REMU),
                     _ => None
                 },
                 0b101 => match word >> 25 {
                     0b0000000 => Some(&SRL),
+                    0b0000001 => Some(&DIVU),
                     0b0100000 => Some(&SRA),
                     _ => None
                 },
                 0b110 => match word >> 25 {
                     0b0000000 => Some(&OR),
+                    0b0000001 => Some(&REM),
                     _ => None
                 },
                 _ => None
@@ -759,6 +767,13 @@ impl Cpu {
             Xlen::Bit64 => value as u64
         }
     }
+
+    fn most_negative(&self) -> i64 {
+        match self.xlen {
+            Xlen::Bit32 => std::i32::MIN as i64,
+            Xlen::Bit64 => std::i64::MIN
+        }
+    }
 }
 
 struct FormatR {
@@ -1001,6 +1016,66 @@ const BNE: Instruction = Instruction {
     }
 };
 
+const DIV: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.x[f.rs1];
+        let divisor = cpu.x[f.rs2];
+        if divisor == 0 {
+            cpu.x[f.rd] = -1;
+        } else if dividend == cpu.most_negative() && divisor == -1 {
+            cpu.x[f.rd] = dividend;
+        } else {
+            cpu.x[f.rd] = cpu.sign_extend(dividend.wrapping_div(divisor))
+        }
+        Ok(())
+    }
+};
+
+const DIVU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.unsigned_data(cpu.x[f.rs1]);
+        let divisor = cpu.unsigned_data(cpu.x[f.rs2]);
+        if divisor == 0 {
+            cpu.x[f.rd] = -1;
+        } else {
+            cpu.x[f.rd] = cpu.sign_extend(dividend.wrapping_div(divisor) as i64)
+        }
+        Ok(())
+    }
+};
+
+const DIVUW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.unsigned_data(cpu.x[f.rs1]) as u32;
+        let divisor = cpu.unsigned_data(cpu.x[f.rs2]) as u32;
+        if divisor == 0 {
+            cpu.x[f.rd] = -1;
+        } else {
+            cpu.x[f.rd] = dividend.wrapping_div(divisor) as i32 as i64
+        }
+        Ok(())
+    }
+};
+
+const DIVW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.x[f.rs1] as i32;
+        let divisor = cpu.x[f.rs2] as i32;
+        if divisor == 0 {
+            cpu.x[f.rd] = -1;
+        } else if dividend == std::i32::MIN && divisor == -1 {
+            cpu.x[f.rd] = dividend as i32 as i64;
+        } else {
+            cpu.x[f.rd] = dividend.wrapping_div(divisor) as i32 as i64
+        }
+        Ok(())
+    }
+};
+
 const EBREAK: Instruction = Instruction {
     operation: |_cpu, _word, _address| {
         // TODO: implement debugger?
@@ -1126,6 +1201,67 @@ const LWU: Instruction = Instruction {
     }
 };
 
+const MUL: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_mul(cpu.x[f.rs2]));
+        Ok(())
+    }
+};
+
+const MULH: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = match cpu.xlen {
+            Xlen::Bit32 => {
+                cpu.sign_extend((cpu.x[f.rs1] * cpu.x[f.rs2]) >> 32)
+            },
+            Xlen::Bit64 => {
+                ((cpu.x[f.rs1] as i128) * (cpu.x[f.rs2] as i128) >> 64) as i64
+            }
+        };
+        Ok(())
+    }
+};
+
+const MULHU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = match cpu.xlen {
+            Xlen::Bit32 => {
+                cpu.sign_extend((((cpu.x[f.rs1] as u32 as u64) * (cpu.x[f.rs2] as u32 as u64)) >> 32) as i64)
+            },
+            Xlen::Bit64 => {
+                ((cpu.x[f.rs1] as u64 as u128).wrapping_mul(cpu.x[f.rs2] as u64 as u128) >> 64) as i64
+            }
+        };
+        Ok(())
+    }
+};
+
+const MULHSU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = match cpu.xlen {
+            Xlen::Bit32 => {
+                cpu.sign_extend(((cpu.x[f.rs1] as i64).wrapping_mul(cpu.x[f.rs2] as u32 as i64) >> 32) as i64)
+            },
+            Xlen::Bit64 => {
+                ((cpu.x[f.rs1] as u128).wrapping_mul(cpu.x[f.rs2] as u64 as u128) >> 64) as i64
+            }
+        };
+        Ok(())
+    }
+};
+
+const MULW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend((cpu.x[f.rs1] as i32).wrapping_mul(cpu.x[f.rs2] as i32) as i64);
+        Ok(())
+    }
+};
+
 const OR: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_r(word);
@@ -1138,6 +1274,64 @@ const ORI: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_i(word);
         cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1] | f.imm);
+        Ok(())
+    }
+};
+
+const REM: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.x[f.rs1];
+        let divisor = cpu.x[f.rs2];
+        if divisor == 0 {
+            cpu.x[f.rd] = dividend;
+        } else if dividend == cpu.most_negative() && divisor == -1 {
+            cpu.x[f.rd] = 0;
+        } else {
+            cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_rem(cpu.x[f.rs2]));
+        }
+        Ok(())
+    }
+};
+
+const REMU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.unsigned_data(cpu.x[f.rs1]);
+        let divisor = cpu.unsigned_data(cpu.x[f.rs2]);
+        cpu.x[f.rd] = match divisor {
+            0 => cpu.sign_extend(dividend as i64),
+            _ => cpu.sign_extend(dividend.wrapping_rem(divisor) as i64)
+        };
+        Ok(())
+    }
+};
+
+const REMUW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.x[f.rs1] as u32;
+        let divisor = cpu.x[f.rs2] as u32;
+        cpu.x[f.rd] = match divisor {
+            0 => dividend as i32 as i64,
+            _ => dividend.wrapping_rem(divisor) as i32 as i64
+        };
+        Ok(())
+    }
+};
+
+const REMW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let dividend = cpu.x[f.rs1] as i32;
+        let divisor = cpu.x[f.rs2] as i32;
+        if divisor == 0 {
+            cpu.x[f.rd] = dividend as i64;
+        } else if dividend == std::i32::MIN && divisor == -1 {
+            cpu.x[f.rd] = 0;
+        } else {
+            cpu.x[f.rd] = dividend.wrapping_rem(divisor) as i64;
+        }
         Ok(())
     }
 };
