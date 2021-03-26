@@ -38,7 +38,6 @@ pub enum TrapType {
     MachineExternalInterrupt
 }
 
-#[allow(unused_attributes)]
 struct Instruction {
     operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
 }
@@ -140,6 +139,8 @@ impl Cpu {
                 0b010 => Some(&LW),
                 0b100 => Some(&LBU),
                 0b101 => Some(&LHU),
+                0b110 => Some(&LWU),
+                0b011 => Some(&LD),
                 _ => None
             },
 
@@ -147,24 +148,12 @@ impl Cpu {
                 0b000 => Some(&SB),
                 0b001 => Some(&SH),
                 0b010 => Some(&SW),
+                0b011 => Some(&SD),
                 _ => None
             },
 
             0b0010011 => match (word >> 12) & 7 {
                 0b000 => Some(&ADDI),
-                0b010 => Some(&SLTI),
-                0b011 => Some(&SLTIU),
-                0b100 => Some(&XORI),
-                0b110 => Some(&ORI),
-                0b111 => Some(&ANDI),
-                0b001 => Some(&SLLI),
-                0b101 => Some(&SRLI),
-                0b101 => Some(&SRAI),
-                _ => None
-            },
-
-            0b0010011 => match (word >> 12) & 7 {
-                0b000 => Some(&ADD),
                 0b010 => Some(&SLTI),
                 0b011 => Some(&SLTIU),
                 0b100 => Some(&XORI),
@@ -203,6 +192,10 @@ impl Cpu {
                 0b100 => match word >> 25 {
                     0b0000000 => Some(&XOR),
                     _ => None
+                ,}
+                0b111 => match word >> 25 {
+                    0b0000000 => Some(&AND),
+                    _ => None
                 },
                 0b101 => match word >> 25 {
                     0b0000000 => Some(&SRL),
@@ -211,10 +204,6 @@ impl Cpu {
                 },
                 0b110 => match word >> 25 {
                     0b0000000 => Some(&OR),
-                    _ => None
-                },
-                0b111 => match word >> 25 {
-                    0b0000000 => Some(&AND),
                     _ => None
                 },
                 _ => None
@@ -858,6 +847,22 @@ const ADDI: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_i(word);
         cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_add(f.imm));
+        Ok(())
+    }
+};
+
+const ADDIW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(cpu.x[f.rs2]) as i32 as i64;
+        Ok(())
+    }
+};
+
+const ADDW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(f.imm) as i32 as i64;
         Ok(())
     }
 };
