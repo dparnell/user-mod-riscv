@@ -182,6 +182,43 @@ impl Cpu {
                 _ => None
             },
 
+            0b0110011 => match (word >> 12) & 7 {
+                0b000 => match word >> 25 {
+                    0b0000000 => Some(&ADD),
+                    0b0100000 => Some(&SUB),
+                    _ => None
+                },
+                0b001 => match word >> 25 {
+                    0b0000000 => Some(&SLL),
+                    _ => None
+                },
+                0b010 => match word >> 25 {
+                    0b0000000 => Some(&SLT),
+                    _ => None
+                },
+                0b011 => match word >> 25 {
+                    0b0000000 => Some(&SLTU),
+                    _ => None
+                },
+                0b100 => match word >> 25 {
+                    0b0000000 => Some(&XOR),
+                    _ => None
+                },
+                0b101 => match word >> 25 {
+                    0b0000000 => Some(&SRL),
+                    0b0100000 => Some(&SRA),
+                    _ => None
+                },
+                0b110 => match word >> 25 {
+                    0b0000000 => Some(&OR),
+                    _ => None
+                },
+                0b111 => match word >> 25 {
+                    0b0000000 => Some(&AND),
+                    _ => None
+                },
+                _ => None
+            }
             _ => None
         }
     }
@@ -1146,6 +1183,14 @@ const SRAI: Instruction = Instruction {
     }
 };
 
+const SRL: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.unsigned_data(cpu.x[f.rs1]).wrapping_shr(cpu.x[f.rs2] as u32) as i64);
+        Ok(())
+    }
+};
+
 const SRLI: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_r(word);
@@ -1155,6 +1200,43 @@ const SRLI: Instruction = Instruction {
         };
         let shamt = (word >> 20) & mask;
         cpu.x[f.rd] = cpu.sign_extend((cpu.unsigned_data(cpu.x[f.rs1]) >> shamt) as i64);
+        Ok(())
+    }
+};
+
+const SRLIW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        let mask = match cpu.xlen {
+            Xlen::Bit32 => 0x1f,
+            Xlen::Bit64 => 0x3f
+        };
+        let shamt = (word >> 20) & mask;
+        cpu.x[f.rd] = ((cpu.x[f.rs1] as u32) >> shamt) as i32 as i64;
+        Ok(())
+    }
+};
+
+const SRLW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = (cpu.x[f.rs1] as u32).wrapping_shr(cpu.x[f.rs2] as u32) as i32 as i64;
+        Ok(())
+    }
+};
+
+const SUB: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_sub(cpu.x[f.rs2]));
+        Ok(())
+    }
+};
+
+const SUBW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_sub(cpu.x[f.rs2]) as i32 as i64;
         Ok(())
     }
 };
