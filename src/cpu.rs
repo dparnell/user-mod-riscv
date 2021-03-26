@@ -163,6 +163,25 @@ impl Cpu {
                 _ => None
             },
 
+            0b0010011 => match (word >> 12) & 7 {
+                0b000 => Some(&ADD),
+                0b010 => Some(&SLTI),
+                0b011 => Some(&SLTIU),
+                0b100 => Some(&XORI),
+                0b110 => Some(&ORI),
+                0b111 => Some(&ANDI),
+                0b001 => match word >> 25 {
+                    0b0000000 => Some(&SLLI),
+                    _ => None
+                },
+                0b101 => match word >> 25 {
+                    0b0000000 => Some(&SRLI),
+                    0b0100000 => Some(&SRAI),
+                    _ => None
+                },
+                _ => None
+            },
+
             _ => None
         }
     }
