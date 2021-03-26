@@ -243,6 +243,7 @@ impl Cpu {
 
             0b0001111 => match (word >> 12) & 7 {
                 0b000 => Some(&FENCE),
+                0b001 => Some(&FENCE_I),
                 _ => None
             },
 
