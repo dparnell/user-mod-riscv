@@ -38,8 +38,8 @@ pub enum TrapType {
     MachineExternalInterrupt
 }
 
+#[allow(unused_attributes)]
 struct Instruction {
-    name: &'static str,
     operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
 }
 
@@ -96,9 +96,7 @@ impl Cpu {
     }
 
     pub fn update_pc(&mut self, new_pc: *mut u32) {
-        unsafe {
-            self.pc = new_pc as *mut u8;
-        }
+        self.pc = new_pc as *mut u8;
     }
 
     pub fn get_pc(&self) -> usize {
@@ -117,7 +115,47 @@ impl Cpu {
     }
 
     fn decode(word: u32) -> Option<&'static Instruction> {
-        Some(&ADDI)
+        match word & 0x7f {
+            0b0110111 => Some(&LUI),
+
+            0b0010111 => Some(&AUIPC),
+
+            0b1101111 => Some(&JAL),
+
+            0b1100111 => Some(&JALR),
+
+            0b1100011 => match (word >> 12) & 7 {
+                0b000 => Some(&BEQ),
+                0b001 => Some(&BNE),
+                0b100 => Some(&BLT),
+                0b101 => Some(&BGE),
+                0b110 => Some(&BLTU),
+                0b111 => Some(&BGEU),
+                _ => None
+            },
+
+            0b0000011 => match (word >> 12) & 7 {
+                0b000 => Some(&LB),
+                0b001 => Some(&LH),
+                0b010 => Some(&LW),
+                0b100 => Some(&LBU),
+                0b101 => Some(&LHU),
+                _ => None
+            },
+
+            0b0100011 => match (word >> 12) & 7 {
+                0b000 => Some(&SB),
+                0b001 => Some(&SH),
+                0b010 => Some(&SW),
+                _ => None
+            },
+
+            0b0010011 => match (word >> 12) & 7 {
+                0b000 => Some(&ADDI),
+                _ => None
+            }
+            _ => None
+        }
     }
 
     fn uncompress(halfword: u32) -> u32 {
@@ -607,6 +645,13 @@ impl Cpu {
             Xlen::Bit64 => value
         }
     }
+
+    fn unsigned_data(&self, value: i64) -> u64 {
+        match self.xlen {
+            Xlen::Bit32 => (value & 0xffffffff) as u64,
+            Xlen::Bit64 => value as u64
+        }
+    }
 }
 
 struct FormatR {
@@ -620,6 +665,24 @@ fn parse_format_r(word: u32) -> FormatR {
         rd: ((word >> 7) & 0x1f) as usize, // [11:7]
         rs1: ((word >> 15) & 0x1f) as usize, // [19:15]
         rs2: ((word >> 20) & 0x1f) as usize // [24:20]
+    }
+}
+
+struct FormatU {
+    rd: usize,
+    imm: u64
+}
+
+fn parse_format_u(word: u32) -> FormatU {
+    FormatU {
+        rd: ((word >> 7) & 0x1f) as usize, // [11:7]
+        imm: (
+            match word & 0x80000000 {
+                0x80000000 => 0xffffffff00000000,
+                _ => 0
+            } | // imm[63:32] = [31]
+                ((word as u64) & 0xfffff000) // imm[31:12] = [31:12]
+        ) as u64
     }
 }
 
@@ -643,8 +706,70 @@ fn parse_format_i(word: u32) -> FormatI {
     }
 }
 
+struct FormatJ {
+    rd: usize,
+    imm: u64
+}
+
+fn parse_format_j(word: u32) -> FormatJ {
+    FormatJ {
+        rd: ((word >> 7) & 0x1f) as usize, // [11:7]
+        imm: (
+            match word & 0x80000000 { // imm[31:20] = [31]
+                0x80000000 => 0xfff00000,
+                _ => 0
+            } |
+                (word & 0x000ff000) | // imm[19:12] = [19:12]
+                ((word & 0x00100000) >> 9) | // imm[11] = [20]
+                ((word & 0x7fe00000) >> 20) // imm[10:1] = [30:21]
+        ) as i32 as i64 as u64
+    }
+}
+
+struct FormatB {
+    rs1: usize,
+    rs2: usize,
+    imm: u64
+}
+
+fn parse_format_b(word: u32) -> FormatB {
+    FormatB {
+        rs1: ((word >> 15) & 0x1f) as usize, // [19:15]
+        rs2: ((word >> 20) & 0x1f) as usize, // [24:20]
+        imm: (
+            match word & 0x80000000 { // imm[31:12] = [31]
+                0x80000000 => 0xfffff000,
+                _ => 0
+            } |
+                ((word << 4) & 0x00000800) | // imm[11] = [7]
+                ((word >> 20) & 0x000007e0) | // imm[10:5] = [30:25]
+                ((word >> 7) & 0x0000001e) // imm[4:1] = [11:8]
+        ) as i32 as i64 as u64
+    }
+}
+
+struct FormatS {
+    rs1: usize,
+    rs2: usize,
+    imm: i64
+}
+
+fn parse_format_s(word: u32) -> FormatS {
+    FormatS {
+        rs1: ((word >> 15) & 0x1f) as usize, // [19:15]
+        rs2: ((word >> 20) & 0x1f) as usize, // [24:20]
+        imm: (
+            match word & 0x80000000 {
+                0x80000000 => 0xfffff000,
+                _ => 0
+            } | // imm[31:12] = [31]
+                ((word >> 20) & 0xfe0) | // imm[11:5] = [31:25]
+                ((word >> 7) & 0x1f) // imm[4:0] = [11:7]
+        ) as i32 as i64
+    }
+}
+
 const ADD: Instruction = Instruction {
-    name: "ADD",
     operation: |cpu, word, _address| {
         let f = parse_format_r(word);
         cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_add(cpu.x[f.rs2]));
@@ -653,10 +778,218 @@ const ADD: Instruction = Instruction {
 };
 
 const ADDI: Instruction = Instruction {
-    name: "ADDI",
     operation: |cpu, word, _address| {
         let f = parse_format_i(word);
         cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_add(f.imm));
+        Ok(())
+    }
+};
+
+const AUIPC: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_u(word);
+        cpu.x[f.rd] = cpu.sign_extend(address.wrapping_add(f.imm as usize) as i64);
+        Ok(())
+    }
+};
+
+const BEQ: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.sign_extend(cpu.x[f.rs1]) == cpu.sign_extend(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const BGE: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.sign_extend(cpu.x[f.rs1]) >= cpu.sign_extend(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const BGEU: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.unsigned_data(cpu.x[f.rs1]) >= cpu.unsigned_data(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const BLT: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.sign_extend(cpu.x[f.rs1]) < cpu.sign_extend(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const BLTU: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.unsigned_data(cpu.x[f.rs1]) < cpu.unsigned_data(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const BNE: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_b(word);
+        if cpu.sign_extend(cpu.x[f.rs1]) != cpu.sign_extend(cpu.x[f.rs2]) {
+            cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        }
+        Ok(())
+    }
+};
+
+const JAL: Instruction = Instruction {
+    operation: |cpu, word, address| {
+        let f = parse_format_j(word);
+        cpu.x[f.rd] = cpu.sign_extend(cpu.pc as i64);
+        cpu.pc = address.wrapping_add(f.imm as usize) as *mut u8;
+        Ok(())
+    }
+};
+
+const JALR: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        let tmp = cpu.sign_extend(cpu.pc as i64);
+        cpu.pc = (cpu.x[f.rs1] as u64).wrapping_add(f.imm as u64) as *mut u8;
+        cpu.x[f.rd] = tmp;
+        Ok(())
+    }
+};
+
+const LB: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const i8) as i64;
+        }
+        Ok(())
+    }
+};
+
+const LBU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u8) as i64;
+        }
+        Ok(())
+    }
+};
+
+const LD: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const i64);
+        }
+        Ok(())
+    }
+};
+
+const LH: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const i16) as i64;
+        }
+        Ok(())
+    }
+};
+
+const LHU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u16) as i64;
+        }
+        Ok(())
+    }
+};
+
+const LUI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_u(word);
+        cpu.x[f.rd] = f.imm as i64;
+        Ok(())
+    }
+};
+
+const LW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const i32) as i64;
+        }
+        Ok(())
+    }
+};
+
+const LWU: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_i(word);
+        unsafe {
+            cpu.x[f.rd] = *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u32) as i64;
+        }
+        Ok(())
+    }
+};
+
+const SB: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_s(word);
+
+        unsafe {
+            *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u8) = cpu.x[f.rs2] as u8;
+        }
+        Ok(())
+    }
+};
+
+const SD: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_s(word);
+
+        unsafe {
+            *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u64) = cpu.x[f.rs2] as u64;
+        }
+        Ok(())
+    }
+};
+
+const SH: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_s(word);
+
+        unsafe {
+            *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u16) = cpu.x[f.rs2] as u16;
+        }
+        Ok(())
+    }
+};
+
+const SW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_s(word);
+
+        unsafe {
+            *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u32) = cpu.x[f.rs2] as u32;
+        }
         Ok(())
     }
 };
