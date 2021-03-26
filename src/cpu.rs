@@ -234,6 +234,7 @@ impl Cpu {
             0b0111011 => match (word >> 12) & 7 {
                 0b000 => match word >> 25 {
                     0b0000000 => Some(&ADDW),
+                    0b0000001 => Some(&MULW),
                     0b0100000 => Some(&SUBW),
                     _ => None
                 },
@@ -243,7 +244,20 @@ impl Cpu {
                 },
                 0b101 => match word >> 25 {
                     0b0000000 => Some(&SRLW),
+                    0b0000001 => Some(&DIVUW),
                     0b0100000 => Some(&SRAW),
+                    _ => None
+                },
+                0b100 => match word >> 25 {
+                    0b0000001 => Some(&DIVW),
+                    _ => None
+                },
+                0b110 => match word >> 25 {
+                    0b0000001 => Some(&REMW),
+                    _ => None
+                },
+                0b111 => match word >> 25 {
+                    0b0000001 => Some(&REMUW),
                     _ => None
                 },
                 _ => None
