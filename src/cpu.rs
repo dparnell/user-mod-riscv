@@ -64,6 +64,8 @@ pub struct Cpu {
     x: [i64; 32],
     f: [f64; 32],
     pc: *mut u8,
+    reservation: u64, // @TODO: Should support multiple address reservations
+    is_reservation_set: bool,
 }
 
 impl Cpu {
@@ -72,7 +74,9 @@ impl Cpu {
             xlen: Xlen::Bit32,
             x: [0; 32],
             f: [0.0; 32],
-            pc: null_mut()
+            pc: null_mut(),
+            reservation: 0,
+            is_reservation_set: false
         }
     }
 
@@ -266,6 +270,44 @@ impl Cpu {
             0b0001111 => match (word >> 12) & 7 {
                 0b000 => Some(&FENCE),
                 0b001 => Some(&FENCE_I),
+                _ => None
+            },
+
+            0b0101111 => match (word >> 12) & 7 {
+                0b010 => match word >> 27 {
+                    0b00010 => match (word >> 20) & 0x1f {
+                        0b00000 => Some(&LR_W),
+                        _ => None
+                    },
+                    0b00011 => Some(&SC_W),
+                    0b00001 => Some(&AMOSWAP_W),
+                    0b00000 => Some(&AMOADD_W),
+                    0b00100 => Some(&AMOXOR_W),
+                    0b01100 => Some(&AMOAND_W),
+                    0b01000 => Some(&AMOOR_W),
+                    0b10000 => Some(&AMOMIN_W),
+                    0b10100 => Some(&AMOMAX_W),
+                    0b11000 => Some(&AMOMINU_W),
+                    0b11100 => Some(&AMOMAXU_W),
+                    _ => None
+                },
+                0b011 => match word >> 27 {
+                    0b00010 => match (word >> 20) & 0x1f {
+                        0b00000 => Some(&LR_D),
+                        _ => None
+                    },
+                    0b00011 => Some(&SC_D),
+                    0b00001 => Some(&AMOSWAP_D),
+                    0b00000 => Some(&AMOADD_D),
+                    0b00100 => Some(&AMOXOR_D),
+                    0b01100 => Some(&AMOAND_D),
+                    0b01000 => Some(&AMOOR_D),
+                    0b10000 => Some(&AMOMIN_D),
+                    0b10100 => Some(&AMOMAX_D),
+                    0b11000 => Some(&AMOMINU_D),
+                    0b11100 => Some(&AMOMAXU_D),
+                    _ => None
+                },
                 _ => None
             },
 
@@ -954,6 +996,254 @@ const AND: Instruction = Instruction {
     }
 };
 
+const AMOADD_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i64);
+            *(cpu.x[f.rs1] as *mut u64) = cpu.x[f.rs2].wrapping_add(tmp) as u64;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOADD_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i32) as i64;
+            *(cpu.x[f.rs1] as *mut u32) = cpu.x[f.rs2].wrapping_add(tmp) as u32;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOAND_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i64);
+            *(cpu.x[f.rs1] as *mut u64) = (cpu.x[f.rs2] & tmp) as u64;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOAND_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i32) as i64;
+            *(cpu.x[f.rs1] as *mut u32) = (cpu.x[f.rs2] & tmp) as u32;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMAX_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i64);
+            let max = match cpu.x[f.rs2] >=tmp {
+                true => cpu.x[f.rs2],
+                false => tmp as i64
+            };
+            *(cpu.x[f.rs1] as *mut i64) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMAX_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i32);
+            let max = match (cpu.x[f.rs2] as i32) >=tmp {
+                true => cpu.x[f.rs2] as i32,
+                false => tmp as i32
+            };
+            *(cpu.x[f.rs1] as *mut i32) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMAXU_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u64);
+            let max = match (cpu.x[f.rs2] as u64) >=tmp {
+                true => cpu.x[f.rs2] as u64,
+                false => tmp as u64
+            };
+            *(cpu.x[f.rs1] as *mut u64) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMAXU_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u32);
+            let max = match (cpu.x[f.rs2] as u32) >=tmp {
+                true => cpu.x[f.rs2] as u32,
+                false => tmp as u32
+            };
+            *(cpu.x[f.rs1] as *mut u32) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMIN_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i64);
+            let max = match cpu.x[f.rs2] <=tmp {
+                true => cpu.x[f.rs2],
+                false => tmp as i64
+            };
+            *(cpu.x[f.rs1] as *mut i64) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMIN_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const i32);
+            let max = match (cpu.x[f.rs2] as i32) <= tmp {
+                true => cpu.x[f.rs2] as i32,
+                false => tmp as i32
+            };
+            *(cpu.x[f.rs1] as *mut i32) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMINU_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u64);
+            let max = match (cpu.x[f.rs2] as u64) <= tmp {
+                true => cpu.x[f.rs2] as u64,
+                false => tmp as u64
+            };
+            *(cpu.x[f.rs1] as *mut u64) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOMINU_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u32);
+            let max = match (cpu.x[f.rs2] as u32) <= tmp {
+                true => cpu.x[f.rs2] as u32,
+                false => tmp as u32
+            };
+            *(cpu.x[f.rs1] as *mut u32) = max;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOOR_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u64);
+            *(cpu.x[f.rs1] as *mut u64) = ((cpu.x[f.rs2] as u64) | tmp) as u64;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOOR_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u32);
+            *(cpu.x[f.rs1] as *mut u32) = ((cpu.x[f.rs2] as u32) | tmp) as u32;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOSWAP_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u64);
+            *(cpu.x[f.rs1] as *mut u64) = cpu.x[f.rs2] as u64;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOSWAP_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u32);
+            *(cpu.x[f.rs1] as *mut u32) = cpu.x[f.rs2] as u32;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOXOR_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u64);
+            *(cpu.x[f.rs1] as *mut u64) = ((cpu.x[f.rs2] as u64) ^ tmp) as u64;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
+const AMOXOR_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        unsafe {
+            let tmp = *(cpu.x[f.rs1] as *const u32);
+            *(cpu.x[f.rs1] as *mut u32) = ((cpu.x[f.rs2] as u32) ^ tmp) as u32;
+            cpu.x[f.rd] = tmp as i64;
+        }
+        Ok(())
+    }
+};
+
 const ANDI: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_i(word);
@@ -1187,6 +1477,32 @@ const LHU: Instruction = Instruction {
     }
 };
 
+const LR_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        // @TODO: Implement properly
+        unsafe {
+            cpu.x[f.rd] = *(cpu.x[f.rs1] as *const i64);
+        }
+        cpu.is_reservation_set = true;
+        cpu.reservation = cpu.x[f.rs1] as u64; // Is virtual address ok?
+        Ok(())
+    }
+};
+
+const LR_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        // @TODO: Implement properly
+        unsafe {
+            cpu.x[f.rd] = *(cpu.x[f.rs1] as *const u32) as i64;
+        }
+        cpu.is_reservation_set = true;
+        cpu.reservation = cpu.x[f.rs1] as u64; // Is virtual address ok?
+        Ok(())
+    }
+};
+
 const LUI: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_u(word);
@@ -1357,6 +1673,38 @@ const SB: Instruction = Instruction {
         unsafe {
             *((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *mut u8) = cpu.x[f.rs2] as u8;
         }
+        Ok(())
+    }
+};
+
+const SC_D: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        // @TODO: Implement properly
+        cpu.x[f.rd] = match cpu.is_reservation_set && cpu.reservation == (cpu.x[f.rs1] as u64) {
+            true => unsafe {
+                *(cpu.x[f.rs1] as *mut u64) = cpu.x[f.rs2] as u64;
+                cpu.is_reservation_set = false;
+                0
+            },
+            false => 1
+        };
+        Ok(())
+    }
+};
+
+const SC_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_r(word);
+        // @TODO: Implement properly
+        cpu.x[f.rd] = match cpu.is_reservation_set && cpu.reservation == (cpu.x[f.rs1] as u64) {
+            true => unsafe {
+                *(cpu.x[f.rs1] as *mut u32) = cpu.x[f.rs2] as u32;
+                cpu.is_reservation_set = false;
+                0
+            },
+            false => 1
+        };
         Ok(())
     }
 };
