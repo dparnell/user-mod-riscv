@@ -80,11 +80,12 @@ pub enum TrapType {
     MachineTimerInterrupt,
     UserExternalInterrupt,
     SupervisorExternalInterrupt,
-    MachineExternalInterrupt
+    MachineExternalInterrupt,
+    Stop
 }
 
-struct Instruction {
-    operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
+pub struct Instruction {
+    pub operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
 }
 
 /*
@@ -106,12 +107,13 @@ x28-31	    t3-6	    temporary registers	Caller
  */
 pub struct Cpu {
     pc: *mut u8,
-    x: [i64; 32],
-    f: [f64; 32],
+    pub x: [i64; 32],
+    pub f: [f64; 32],
     xlen: Xlen,
-    csr: [u64; CSR_CAPACITY],
+    pub csr: [u64; CSR_CAPACITY],
     reservation: u64, // @TODO: Should support multiple address reservations
     is_reservation_set: bool,
+    ecall_handler: Option<Instruction>
 }
 
 impl Cpu {
@@ -123,7 +125,8 @@ impl Cpu {
             xlen: Xlen::Bit64,
             csr: [0; CSR_CAPACITY],
             reservation: 0,
-            is_reservation_set: false
+            is_reservation_set: false,
+            ecall_handler: None
         }
     }
 
@@ -147,6 +150,10 @@ impl Cpu {
 
     pub fn update_pc(&mut self, new_pc: *mut u32) {
         self.pc = new_pc as *mut u8;
+    }
+
+    pub fn set_ecall_handler(&mut self, handler: Option<Instruction>) {
+        self.ecall_handler = handler;
     }
 
     pub fn get_pc(&self) -> usize {
@@ -1565,9 +1572,12 @@ const EBREAK: Instruction = Instruction {
 };
 
 const ECALL: Instruction = Instruction {
-    operation: |_cpu, _word, _address| {
-        // TODO: call out to host application
-        Ok(())
+    operation: |cpu, word, address| {
+        if let Some(handler) = &cpu.ecall_handler {
+            (handler.operation)(cpu, word, address)
+        } else {
+            Ok(())
+        }
     }
 };
 
