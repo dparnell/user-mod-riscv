@@ -6,12 +6,14 @@ pub enum Xlen {
     Bit64
 }
 
+#[derive(Debug)]
 pub struct Trap {
     pub trap_type: TrapType,
     pub value: u64 // Trap type specific value
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum TrapType {
     InstructionAddressMisaligned,
     InstructionAccessFault,
@@ -69,7 +71,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Cpu {
             xlen: Xlen::Bit32,
             x: [0; 32],
