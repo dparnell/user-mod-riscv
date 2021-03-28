@@ -28,7 +28,7 @@ mod test {
     }
 
     impl ElfLoader for RVTestElfLoader {
-        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), &'static str> {
+        fn allocate(&mut self, _load_headers: LoadableHeaders) -> Result<(), &'static str> {
             /*
             for header in load_headers {
                 println!(
@@ -42,7 +42,7 @@ mod test {
             Ok(())
         }
 
-        fn relocate(&mut self, entry: &Rela<P64>) -> Result<(), &'static str> {
+        fn relocate(&mut self, _entry: &Rela<P64>) -> Result<(), &'static str> {
             // let typ = TypeRela64::from(entry.get_type());
             // let addr: *mut u64 = (self.vbase + entry.get_offset()) as *mut u64;
 
@@ -50,7 +50,7 @@ mod test {
 
         }
 
-        fn load(&mut self, flags: Flags, base: VAddr, region: &[u8]) -> Result<(), &'static str> {
+        fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), &'static str> {
             let start = base - IMG_BASE;
             let end = start + region.len() as u64;
             if end < MAX_SIZE as u64 {
@@ -67,9 +67,9 @@ mod test {
 
         fn tls(
             &mut self,
-            tdata_start: VAddr,
+            _tdata_start: VAddr,
             _tdata_length: u64,
-            total_size: u64,
+            _total_size: u64,
             _align: u64
         ) -> Result<(), &'static str> {
             // let tls_end = tdata_start +  total_size;
@@ -90,8 +90,10 @@ mod test {
 
         let mut cpu = Cpu::new();
         cpu.update_pc(loader.get_target());
+        let base_pc = cpu.get_pc();
         loop {
-            print!("pc = {:#x}", cpu.get_pc());
+            print!("pc= {:#x} =>", cpu.get_pc());
+            print!(" {:#x}", cpu.get_pc() - base_pc + IMG_BASE as usize);
             match cpu.tick() {
                 Ok(_) => {
                     println!(" good instruction");

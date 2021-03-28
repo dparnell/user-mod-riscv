@@ -1,5 +1,48 @@
 use std::ptr::null_mut;
 
+const CSR_CAPACITY: usize = 4096;
+const _CSR_USTATUS_ADDRESS: u16 = 0x000;
+const CSR_FFLAGS_ADDRESS: u16 = 0x001;
+const CSR_FRM_ADDRESS: u16 = 0x002;
+const CSR_FCSR_ADDRESS: u16 = 0x003;
+const _CSR_UIE_ADDRESS: u16 = 0x004;
+const _CSR_UTVEC_ADDRESS: u16 = 0x005;
+const _CSR_USCRATCH_ADDRESS: u16 = 0x040;
+const _CSR_UEPC_ADDRESS: u16 = 0x041;
+const _CSR_UCAUSE_ADDRESS: u16 = 0x042;
+const _CSR_UTVAL_ADDRESS: u16 = 0x043;
+const _CSR_UIP_ADDRESS: u16 = 0x044;
+const CSR_SSTATUS_ADDRESS: u16 = 0x100;
+const _CSR_SEDELEG_ADDRESS: u16 = 0x102;
+const _SR_SIDELEG_ADDRESS: u16 = 0x103;
+const CSR_SIE_ADDRESS: u16 = 0x104;
+const _CSR_STVEC_ADDRESS: u16 = 0x105;
+const _CSR_SSCRATCH_ADDRESS: u16 = 0x140;
+const _CSR_SEPC_ADDRESS: u16 = 0x141;
+const _CSR_SCAUSE_ADDRESS: u16 = 0x142;
+const _CSR_STVAL_ADDRESS: u16 = 0x143;
+const CSR_SIP_ADDRESS: u16 = 0x144;
+const _CSR_SATP_ADDRESS: u16 = 0x180;
+const CSR_MSTATUS_ADDRESS: u16 = 0x300;
+const _CSR_MISA_ADDRESS: u16 = 0x301;
+const _CSR_MEDELEG_ADDRESS: u16 = 0x302;
+const CSR_MIDELEG_ADDRESS: u16 = 0x303;
+const CSR_MIE_ADDRESS: u16 = 0x304;
+
+const _CSR_MTVEC_ADDRESS: u16 = 0x305;
+const _CSR_MSCRATCH_ADDRESS: u16 = 0x340;
+const CSR_MEPC_ADDRESS: u16 = 0x341;
+const _CSR_MCAUSE_ADDRESS: u16 = 0x342;
+const _CSR_MTVAL_ADDRESS: u16 = 0x343;
+const CSR_MIP_ADDRESS: u16 = 0x344;
+const _CSR_PMPCFG0_ADDRESS: u16 = 0x3a0;
+const _CSR_PMPADDR0_ADDRESS: u16 = 0x3b0;
+const _CSR_MCYCLE_ADDRESS: u16 = 0xb00;
+const _CSR_CYCLE_ADDRESS: u16 = 0xc00;
+const CSR_TIME_ADDRESS: u16 = 0xc01;
+const _CSR_INSERT_ADDRESS: u16 = 0xc02;
+const _CSR_MHARTID_ADDRESS: u16 = 0xf14;
+
 #[derive(Clone)]
 pub enum Xlen {
     Bit32,
@@ -62,10 +105,11 @@ x28-31	    t3-6	    temporary registers	Caller
 
  */
 pub struct Cpu {
-    xlen: Xlen,
+    pc: *mut u8,
     x: [i64; 32],
     f: [f64; 32],
-    pc: *mut u8,
+    xlen: Xlen,
+    csr: [u64; CSR_CAPACITY],
     reservation: u64, // @TODO: Should support multiple address reservations
     is_reservation_set: bool,
 }
@@ -73,10 +117,11 @@ pub struct Cpu {
 impl Cpu {
     pub fn new() -> Self {
         Cpu {
-            xlen: Xlen::Bit32,
+            pc: null_mut(),
             x: [0; 32],
             f: [0.0; 32],
-            pc: null_mut(),
+            xlen: Xlen::Bit64,
+            csr: [0; CSR_CAPACITY],
             reservation: 0,
             is_reservation_set: false
         }
@@ -110,6 +155,7 @@ impl Cpu {
 
     pub fn tick(&mut self) -> Result<(), Trap> {
         let instruction_address = self.pc;
+        self.csr[CSR_TIME_ADDRESS as usize] = self.csr[CSR_TIME_ADDRESS as usize].wrapping_add(1);
 
         let word = self.fetch();
         if let Some(instruction) = Cpu::decode(word) {
@@ -118,7 +164,7 @@ impl Cpu {
 
             result
         } else {
-            Err(Trap { trap_type: TrapType::IllegalInstruction, value: 0 })
+            Err(Trap { trap_type: TrapType::IllegalInstruction, value: word as u64 })
         }
     }
 
@@ -170,6 +216,7 @@ impl Cpu {
                 0b111 => Some(&ANDI),
                 0b001 => match word >> 25 {
                     0b0000000 => Some(&SLLI),
+                    0b0000001 => Some(&SLLI),
                     _ => None
                 },
                 0b101 => match word >> 25 {
@@ -320,16 +367,18 @@ impl Cpu {
                 0b000 => match word {
                     0b00000000000000000000000001110011 => Some(&ECALL),
                     0b00000000000100000000000001110011 => Some(&EBREAK),
+                    0b00110000001000000000000001110011 => Some(&MRET),
                     _ => None
                 },
-                0b001 => Some(&UNIMPLEMENTED), // CSRRW
-                0b010 => Some(&UNIMPLEMENTED), // CSRRS
-                0b011 => Some(&UNIMPLEMENTED), // CSRRC
-                0b101 => Some(&UNIMPLEMENTED), // CSRRWI
-                0b110 => Some(&UNIMPLEMENTED), // CSRRSI
-                0b111 => Some(&UNIMPLEMENTED), // CSRRCI
+                0b001 => Some(&CSRRW),
+                0b010 => Some(&CSRRS),
+                0b011 => Some(&CSRRC),
+                0b101 => Some(&CSRRWI),
+                0b110 => Some(&CSRRSI),
+                0b111 => Some(&CSRRCI),
                 _ => None
             },
+
             _ => None
         }
     }
@@ -835,6 +884,49 @@ impl Cpu {
             Xlen::Bit64 => std::i64::MIN
         }
     }
+
+    fn read_csr(&self, address: u16) -> u64 {
+        match address {
+            // @TODO: Mask should consider of 32-bit mode
+            CSR_FFLAGS_ADDRESS => self.csr[CSR_FCSR_ADDRESS as usize] & 0x1f,
+            CSR_FRM_ADDRESS => (self.csr[CSR_FCSR_ADDRESS as usize] >> 5) & 0x7,
+            CSR_SSTATUS_ADDRESS => self.csr[CSR_MSTATUS_ADDRESS as usize] & 0x80000003000de162,
+            CSR_SIE_ADDRESS => self.csr[CSR_MIE_ADDRESS as usize] & 0x222,
+            CSR_SIP_ADDRESS => self.csr[CSR_MIP_ADDRESS as usize] & 0x222,
+            _ => self.csr[address as usize]
+        }
+    }
+
+    fn write_csr(&mut self, address: u16, value: u64) {
+        match address {
+            CSR_FFLAGS_ADDRESS => {
+                self.csr[CSR_FCSR_ADDRESS as usize] &= !0x1f;
+                self.csr[CSR_FCSR_ADDRESS as usize] |= value & 0x1f;
+            },
+            CSR_FRM_ADDRESS => {
+                self.csr[CSR_FCSR_ADDRESS as usize] &= !0xe0;
+                self.csr[CSR_FCSR_ADDRESS as usize] |= (value << 5) & 0xe0;
+            },
+            CSR_SSTATUS_ADDRESS => {
+                self.csr[CSR_MSTATUS_ADDRESS as usize] &= !0x80000003000de162;
+                self.csr[CSR_MSTATUS_ADDRESS as usize] |= value & 0x80000003000de162;
+            },
+            CSR_SIE_ADDRESS => {
+                self.csr[CSR_MIE_ADDRESS as usize] &= !0x222;
+                self.csr[CSR_MIE_ADDRESS as usize] |= value & 0x222;
+            },
+            CSR_SIP_ADDRESS => {
+                self.csr[CSR_MIP_ADDRESS as usize] &= !0x222;
+                self.csr[CSR_MIP_ADDRESS as usize] |= value & 0x222;
+            },
+            CSR_MIDELEG_ADDRESS => {
+                self.csr[address as usize] = value & 0x666; // from qemu
+            },
+            _ => {
+                self.csr[address as usize] = value;
+            }
+        };
+    }
 }
 
 struct FormatR {
@@ -952,6 +1044,21 @@ fn parse_format_s(word: u32) -> FormatS {
     }
 }
 
+struct FormatCSR {
+    csr: u16,
+    rs: usize,
+    rd: usize
+}
+
+fn parse_format_csr(word: u32) -> FormatCSR {
+    FormatCSR {
+        csr: ((word >> 20) & 0xfff) as u16, // [31:20]
+        rs: ((word >> 15) & 0x1f) as usize, // [19:15], also uimm
+        rd: ((word >> 7) & 0x1f) as usize // [11:7]
+    }
+}
+
+/*
 const UNIMPLEMENTED: Instruction = Instruction {
     operation: |_cpu, word, _address| {
         Err(Trap{
@@ -960,6 +1067,7 @@ const UNIMPLEMENTED: Instruction = Instruction {
         })
     }
 };
+*/
 
 const ADD: Instruction = Instruction {
     operation: |cpu, word, _address| {
@@ -1325,6 +1433,70 @@ const BNE: Instruction = Instruction {
     }
 };
 
+const CSRRC: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr) as i64;
+        let tmp = cpu.x[f.rs];
+        cpu.x[f.rd] = cpu.sign_extend(data);
+        cpu.write_csr(f.csr, (cpu.x[f.rd] & !tmp) as u64);
+
+        Ok(())
+    }
+};
+
+const CSRRCI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr);
+        cpu.x[f.rd] = cpu.sign_extend(data as i64);
+        cpu.write_csr(f.csr, (cpu.x[f.rd] & !(f.rs as i64)) as u64);
+        Ok(())
+    }
+};
+
+const CSRRS: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr);
+        let tmp = cpu.x[f.rs];
+        cpu.x[f.rd] = cpu.sign_extend(data as i64);
+        cpu.write_csr(f.csr, cpu.unsigned_data(cpu.x[f.rd] | tmp));
+        Ok(())
+    }
+};
+
+const CSRRSI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr);
+        cpu.x[f.rd] = cpu.sign_extend(data as i64);
+        cpu.write_csr(f.csr, cpu.unsigned_data(cpu.x[f.rd] | (f.rs as i64)));
+        Ok(())
+    }
+};
+
+const CSRRW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr);
+        let tmp = cpu.x[f.rs];
+        cpu.x[f.rd] = cpu.sign_extend(data as i64);
+        cpu.write_csr(f.csr, cpu.unsigned_data(tmp));
+        Ok(())
+    }
+};
+
+const CSRRWI: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = parse_format_csr(word);
+        let data = cpu.read_csr(f.csr);
+        cpu.x[f.rd] = cpu.sign_extend(data as i64);
+        cpu.write_csr(f.csr, f.rs as u64);
+        Ok(())
+    }
+};
+
 const DIV: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_r(word);
@@ -1593,6 +1765,23 @@ const MULW: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = parse_format_r(word);
         cpu.x[f.rd] = cpu.sign_extend((cpu.x[f.rs1] as i32).wrapping_mul(cpu.x[f.rs2] as i32) as i64);
+        Ok(())
+    }
+};
+
+// while this is a "machine" mode instruction it is needed for the official tests to pass
+const MRET: Instruction = Instruction {
+    operation: |cpu, _word, _address| {
+        cpu.pc = cpu.read_csr(CSR_MEPC_ADDRESS) as *mut u8;
+
+        let status = cpu.read_csr(CSR_MSTATUS_ADDRESS);
+        let mpie = (status >> 7) & 1;
+        //let mpp = (status >> 11) & 0x3;
+        let mprv = 0;
+        // Override MIE[3] with MPIE[7], set MPIE[7] to 1, set MPP[12:11] to 0
+        // and override MPRV[17]
+        let new_status = (status & !0x21888) | (mprv << 17) | (mpie << 3) | (1 << 7);
+        cpu.write_csr(CSR_MSTATUS_ADDRESS, new_status);
         Ok(())
     }
 };
@@ -1949,7 +2138,7 @@ mod test_cpu {
     #[test]
     fn babys_first_instruction() {
         let mut cpu = Cpu::new();
-        let mut instruction= vec![0x00000505]; /// addi a0,a0,1
+        let mut instruction= vec![0x00000505]; // addi a0,a0,1
         cpu.update_pc(&mut instruction[0]);
         let pc1 = cpu.get_pc();
         assert_eq!(cpu.x[10], 0);
