@@ -111,7 +111,10 @@ impl Cpu {
 
         let word = self.fetch();
         if let Some(instruction) = Cpu::decode(word) {
-            (instruction.operation)(self, word, instruction_address)
+            let result = (instruction.operation)(self, word, instruction_address);
+            self.x[0] = 0; // make sure x0 is still zero!
+
+            result
         } else {
             Err(Trap { trap_type: TrapType::IllegalInstruction, value: 0 })
         }
