@@ -81,40 +81,66 @@ mod test {
 
     }
 
-    #[test]
-    fn rv64ui_add() {
-        let binary_blob = include_bytes!("../test/rv64ui-p-add");
-        let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
-        let mut loader = RVTestElfLoader::new();
-        binary.load(&mut loader).expect("Can't load the binary?");
+    macro_rules! rv_test {
+        ( $bytes:literal ) => {
+            let binary_blob = include_bytes!($bytes);
+            let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
+            let mut loader = RVTestElfLoader::new();
+            binary.load(&mut loader).expect("Can't load the binary?");
 
-        let mut cpu = Cpu::new();
-        cpu.set_ecall_handler(Some(Instruction{
-            operation: |cpu, _word, _address| {
-                Err(Trap { trap_type: TrapType::Stop, value: cpu.x[10] as u64 })
-            }
-        }));
-
-        cpu.update_pc(loader.get_target());
-        //let base_pc = cpu.get_pc();
-        loop {
-            // print!("pc= {:#x} =>", cpu.get_pc());
-            // print!(" {:#x}", cpu.get_pc() - base_pc + IMG_BASE as usize);
-            match cpu.tick() {
-                Ok(_) => {
-                    // println!(" good instruction");
+            let mut cpu = Cpu::new();
+            cpu.set_ecall_handler(Some(Instruction{
+                operation: |cpu, _word, _address| {
+                    Err(Trap { trap_type: TrapType::Stop, value: cpu.x[10] as u64 })
                 }
-                Err(e) => {
-                    match e.trap_type {
-                        TrapType::Stop => {
-                            if e.value != 0 {
-                                panic!("CPU test {:?} failed", e.value >> 1);
-                            }
-                        },
-                        _ => panic!("CPU failure: {:?}", e)
+            }));
+
+            cpu.update_pc(loader.get_target());
+            // let base_pc = cpu.get_pc();
+            loop {
+                // print!("pc= {:#x} =>", cpu.get_pc());
+                // print!(" {:#x}", cpu.get_pc() - base_pc + IMG_BASE as usize);
+                match cpu.tick() {
+                    Ok(_) => {
+                        // println!(" good instruction");
+                        // println!(" regs = {:?}", cpu.x);
+                    }
+                    Err(e) => {
+                        match e.trap_type {
+                            TrapType::Stop => {
+                                if e.value != 0 {
+                                    panic!("CPU test {:?} failed a4={:#x} t2={:#x}", e.value >> 1, cpu.x[14], cpu.x[6]);
+                                } else {
+                                    break;
+                                }
+                            },
+                            _ => panic!("CPU failure: {:?}", e)
+                        }
                     }
                 }
             }
+
         }
+    }
+
+
+    #[test]
+    fn rv64ui_add() {
+        rv_test!("../test/rv64ui-p-add");
+    }
+
+    #[test]
+    fn rv64ui_addi() {
+        rv_test!("../test/rv64ui-p-addi");
+    }
+
+    #[test]
+    fn rv64ui_addiw() {
+        rv_test!("../test/rv64ui-p-addiw");
+    }
+
+    #[test]
+    fn rv64ui_addw() {
+        rv_test!("../test/rv64ui-p-addw");
     }
 }

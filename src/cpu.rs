@@ -1094,16 +1094,16 @@ const ADDI: Instruction = Instruction {
 
 const ADDIW: Instruction = Instruction {
     operation: |cpu, word, _address| {
-        let f = parse_format_r(word);
-        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(cpu.x[f.rs2]) as i32 as i64;
+        let f = parse_format_i(word);
+        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(f.imm) as i32 as i64;
         Ok(())
     }
 };
 
 const ADDW: Instruction = Instruction {
     operation: |cpu, word, _address| {
-        let f = parse_format_i(word);
-        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(f.imm) as i32 as i64;
+        let f = parse_format_r(word);
+        cpu.x[f.rd] = cpu.x[f.rs1].wrapping_add(cpu.x[f.rs2]) as i32 as i64;
         Ok(())
     }
 };
