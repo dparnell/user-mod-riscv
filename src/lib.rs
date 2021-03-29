@@ -143,4 +143,79 @@ mod test {
     fn rv64ui_addw() {
         rv_test!("../test/rv64ui-p-addw");
     }
+
+    #[test]
+    fn rv64ui_and() {
+        rv_test!("../test/rv64ui-p-and");
+    }
+
+    #[test]
+    fn rv64ui_andi() {
+        rv_test!("../test/rv64ui-p-andi");
+    }
+
+    #[test]
+    fn rv64ui_auipc() {
+        rv_test!("../test/rv64ui-p-auipc");
+    }
+
+    #[test]
+    fn rv64ui_beq() {
+        rv_test!("../test/rv64ui-p-beq");
+    }
+
+    #[test]
+    fn rv64ui_blt() {
+        rv_test!("../test/rv64ui-p-blt");
+    }
+
+    #[test]
+    fn rv64ui_bltu() {
+        rv_test!("../test/rv64ui-p-bltu");
+    }
+
+    #[test]
+    fn rv64ui_bne() {
+        rv_test!("../test/rv64ui-p-bne");
+    }
+
+    #[test]
+    fn rv64ui_fence_i() {
+        rv_test!("../test/rv64ui-p-fence_i");
+    }
+
+    #[test]
+    fn rv64ui_jal() {
+        rv_test!("../test/rv64ui-p-jal");
+    }
+
+    #[test]
+    fn rv64ui_jalr() {
+        rv_test!("../test/rv64ui-p-jalr");
+    }
+
+    #[test]
+    fn rv64ui_lb() {
+        rv_test!("../test/rv64ui-p-lb");
+    }
+
+    #[test]
+    fn rv64ui_lbu() {
+        rv_test!("../test/rv64ui-p-lbu");
+    }
+
+    #[test]
+    fn rv64ui_ld() {
+        rv_test!("../test/rv64ui-p-ld");
+    }
+
+    #[test]
+    fn rv64ui_lh() {
+        rv_test!("../test/rv64ui-p-lh");
+    }
+
+    #[test]
+    fn rv64ui_lhu() {
+        rv_test!("../test/rv64ui-p-lhu");
+    }
 }
