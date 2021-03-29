@@ -125,97 +125,97 @@ mod test {
 
 
     #[test]
-    fn rv64ui_add() {
+    fn rv64ui_p_add() {
         rv_test!("../test/rv64ui-p-add");
     }
 
     #[test]
-    fn rv64ui_addi() {
+    fn rv64ui_p_addi() {
         rv_test!("../test/rv64ui-p-addi");
     }
 
     #[test]
-    fn rv64ui_addiw() {
+    fn rv64ui_p_addiw() {
         rv_test!("../test/rv64ui-p-addiw");
     }
 
     #[test]
-    fn rv64ui_addw() {
+    fn rv64ui_p_addw() {
         rv_test!("../test/rv64ui-p-addw");
     }
 
     #[test]
-    fn rv64ui_and() {
+    fn rv64ui_p_and() {
         rv_test!("../test/rv64ui-p-and");
     }
 
     #[test]
-    fn rv64ui_andi() {
+    fn rv64ui_p_andi() {
         rv_test!("../test/rv64ui-p-andi");
     }
 
     #[test]
-    fn rv64ui_auipc() {
+    fn rv64ui_p_auipc() {
         rv_test!("../test/rv64ui-p-auipc");
     }
 
     #[test]
-    fn rv64ui_beq() {
+    fn rv64ui_p_beq() {
         rv_test!("../test/rv64ui-p-beq");
     }
 
     #[test]
-    fn rv64ui_blt() {
+    fn rv64ui_p_blt() {
         rv_test!("../test/rv64ui-p-blt");
     }
 
     #[test]
-    fn rv64ui_bltu() {
+    fn rv64ui_p_bltu() {
         rv_test!("../test/rv64ui-p-bltu");
     }
 
     #[test]
-    fn rv64ui_bne() {
+    fn rv64ui_p_bne() {
         rv_test!("../test/rv64ui-p-bne");
     }
 
     #[test]
-    fn rv64ui_fence_i() {
+    fn rv64ui_p_fence_i() {
         rv_test!("../test/rv64ui-p-fence_i");
     }
 
     #[test]
-    fn rv64ui_jal() {
+    fn rv64ui_p_jal() {
         rv_test!("../test/rv64ui-p-jal");
     }
 
     #[test]
-    fn rv64ui_jalr() {
+    fn rv64ui_p_jalr() {
         rv_test!("../test/rv64ui-p-jalr");
     }
 
     #[test]
-    fn rv64ui_lb() {
+    fn rv64ui_p_lb() {
         rv_test!("../test/rv64ui-p-lb");
     }
 
     #[test]
-    fn rv64ui_lbu() {
+    fn rv64ui_p_lbu() {
         rv_test!("../test/rv64ui-p-lbu");
     }
 
     #[test]
-    fn rv64ui_ld() {
+    fn rv64ui_p_ld() {
         rv_test!("../test/rv64ui-p-ld");
     }
 
     #[test]
-    fn rv64ui_lh() {
+    fn rv64ui_p_lh() {
         rv_test!("../test/rv64ui-p-lh");
     }
 
     #[test]
-    fn rv64ui_lhu() {
+    fn rv64ui_p_lhu() {
         rv_test!("../test/rv64ui-p-lhu");
     }
 }
