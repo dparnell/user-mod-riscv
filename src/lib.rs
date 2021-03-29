@@ -233,4 +233,139 @@ mod test {
     fn rv64ui_p_lwu() {
         rv_test!("../test/rv64ui-p-lwu");
     }
+
+    #[test]
+    fn rv64ui_p_or() {
+        rv_test!("../test/rv64ui-p-or");
+    }
+
+    #[test]
+    fn rv64ui_p_ori() {
+        rv_test!("../test/rv64ui-p-ori");
+    }
+
+    #[test]
+    fn rv64ui_p_sb() {
+        rv_test!("../test/rv64ui-p-sb");
+    }
+
+    #[test]
+    fn rv64ui_p_sd() {
+        rv_test!("../test/rv64ui-p-sd");
+    }
+
+    #[test]
+    fn rv64ui_p_sh() {
+        rv_test!("../test/rv64ui-p-sh");
+    }
+
+    #[test]
+    fn rv64ui_p_simple() {
+        rv_test!("../test/rv64ui-p-simple");
+    }
+
+    #[test]
+    fn rv64ui_p_sll() {
+        rv_test!("../test/rv64ui-p-sll");
+    }
+
+    #[test]
+    fn rv64ui_p_slli() {
+        rv_test!("../test/rv64ui-p-slli");
+    }
+
+    #[test]
+    fn rv64ui_p_slliw() {
+        rv_test!("../test/rv64ui-p-slliw");
+    }
+
+    #[test]
+    fn rv64ui_p_sllw() {
+        rv_test!("../test/rv64ui-p-sllw");
+    }
+
+    #[test]
+    fn rv64ui_p_slt() {
+        rv_test!("../test/rv64ui-p-slt");
+    }
+
+    #[test]
+    fn rv64ui_p_slti() {
+        rv_test!("../test/rv64ui-p-slti");
+    }
+
+    #[test]
+    fn rv64ui_p_sltiu() {
+        rv_test!("../test/rv64ui-p-sltiu");
+    }
+
+    #[test]
+    fn rv64ui_p_sltu() {
+        rv_test!("../test/rv64ui-p-sltu");
+    }
+
+    #[test]
+    fn rv64ui_p_sra() {
+        rv_test!("../test/rv64ui-p-sra");
+    }
+
+    #[test]
+    fn rv64ui_p_srai() {
+        rv_test!("../test/rv64ui-p-srai");
+    }
+
+    #[test]
+    fn rv64ui_p_sraiw() {
+        rv_test!("../test/rv64ui-p-sraiw");
+    }
+
+    #[test]
+    fn rv64ui_p_sraw() {
+        rv_test!("../test/rv64ui-p-sraw");
+    }
+
+    #[test]
+    fn rv64ui_p_srl() {
+        rv_test!("../test/rv64ui-p-srl");
+    }
+
+    #[test]
+    fn rv64ui_p_srli() {
+        rv_test!("../test/rv64ui-p-srli");
+    }
+
+    #[test]
+    fn rv64ui_p_srliw() {
+        rv_test!("../test/rv64ui-p-srliw");
+    }
+
+    #[test]
+    fn rv64ui_p_srlw() {
+        rv_test!("../test/rv64ui-p-srlw");
+    }
+
+    #[test]
+    fn rv64ui_p_sub() {
+        rv_test!("../test/rv64ui-p-sub");
+    }
+
+    #[test]
+    fn rv64ui_p_subw() {
+        rv_test!("../test/rv64ui-p-subw");
+    }
+
+    #[test]
+    fn rv64ui_p_sw() {
+        rv_test!("../test/rv64ui-p-sw");
+    }
+
+    #[test]
+    fn rv64ui_p_xor() {
+        rv_test!("../test/rv64ui-p-xor");
+    }
+
+    #[test]
+    fn rv64ui_p_xori() {
+        rv_test!("../test/rv64ui-p-xori");
+    }
 }
