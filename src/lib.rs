@@ -218,4 +218,19 @@ mod test {
     fn rv64ui_p_lhu() {
         rv_test!("../test/rv64ui-p-lhu");
     }
+
+    #[test]
+    fn rv64ui_p_lui() {
+        rv_test!("../test/rv64ui-p-lui");
+    }
+
+    #[test]
+    fn rv64ui_p_lw() {
+        rv_test!("../test/rv64ui-p-lw");
+    }
+
+    #[test]
+    fn rv64ui_p_lwu() {
+        rv_test!("../test/rv64ui-p-lwu");
+    }
 }
