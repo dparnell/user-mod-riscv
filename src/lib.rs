@@ -464,5 +464,10 @@ mod test {
         fn rv64ua_p_amoxor_w() {
             rv_test!("../test/rv64ua-p-amoxor_w");
         }
+
+        #[test]
+        fn rv64ua_p_lrsc() {
+            rv_test!("../test/rv64ua-p-lrsc");
+        }
     }
 }
