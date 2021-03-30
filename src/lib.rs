@@ -371,4 +371,98 @@ mod test {
             rv_test!("../test/rv64ui-p-xori");
         }
     }
+
+    mod rv64_ua_p {
+        use super::*;
+
+        #[test]
+        fn rv64ua_p_amoadd_d() {
+            rv_test!("../test/rv64ua-p-amoadd_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amoadd_w() {
+            rv_test!("../test/rv64ua-p-amoadd_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amoand_d() {
+            rv_test!("../test/rv64ua-p-amoand_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amoand_w() {
+            rv_test!("../test/rv64ua-p-amoadd_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amomax_d() {
+            rv_test!("../test/rv64ua-p-amomax_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amomax_w() {
+            rv_test!("../test/rv64ua-p-amomax_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amomaxu_d() {
+            rv_test!("../test/rv64ua-p-amomaxu_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amomaxu_w() {
+            rv_test!("../test/rv64ua-p-amomaxu_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amomin_d() {
+            rv_test!("../test/rv64ua-p-amomin_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amomin_w() {
+            rv_test!("../test/rv64ua-p-amomin_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amominu_d() {
+            rv_test!("../test/rv64ua-p-amominu_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amominu_w() {
+            rv_test!("../test/rv64ua-p-amominu_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amoor_d() {
+            rv_test!("../test/rv64ua-p-amoor_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amoor_w() {
+            rv_test!("../test/rv64ua-p-amoor_w");
+        }
+
+        #[test]
+        fn rv64ua_p_amoswap_d() {
+            rv_test!("../test/rv64ua-p-amoswap_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amoswap_w() {
+            rv_test!("../test/rv64ua-p-amoswap_w");
+        }
+        
+        #[test]
+        fn rv64ua_p_amoxor_d() {
+            rv_test!("../test/rv64ua-p-amoxor_d");
+        }
+
+        #[test]
+        fn rv64ua_p_amoxor_w() {
+            rv_test!("../test/rv64ua-p-amoxor_w");
+        }
+    }
 }

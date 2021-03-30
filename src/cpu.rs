@@ -1222,7 +1222,7 @@ const AMOMAXU_W: Instruction = Instruction {
                 false => tmp as u32
             };
             *(cpu.x[f.rs1] as *mut u32) = max;
-            cpu.x[f.rd] = tmp as i64;
+            cpu.x[f.rd] = tmp as i32 as i64;
         }
         Ok(())
     }
@@ -1233,11 +1233,11 @@ const AMOMIN_D: Instruction = Instruction {
         let f = parse_format_r(word);
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const i64);
-            let max = match cpu.x[f.rs2] <=tmp {
+            let min = match cpu.x[f.rs2] <=tmp {
                 true => cpu.x[f.rs2],
                 false => tmp as i64
             };
-            *(cpu.x[f.rs1] as *mut i64) = max;
+            *(cpu.x[f.rs1] as *mut i64) = min;
             cpu.x[f.rd] = tmp as i64;
         }
         Ok(())
@@ -1249,11 +1249,11 @@ const AMOMIN_W: Instruction = Instruction {
         let f = parse_format_r(word);
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const i32);
-            let max = match (cpu.x[f.rs2] as i32) <= tmp {
+            let min = match (cpu.x[f.rs2] as i32) <= tmp {
                 true => cpu.x[f.rs2] as i32,
                 false => tmp as i32
             };
-            *(cpu.x[f.rs1] as *mut i32) = max;
+            *(cpu.x[f.rs1] as *mut i32) = min;
             cpu.x[f.rd] = tmp as i64;
         }
         Ok(())
@@ -1265,11 +1265,11 @@ const AMOMINU_D: Instruction = Instruction {
         let f = parse_format_r(word);
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const u64);
-            let max = match (cpu.x[f.rs2] as u64) <= tmp {
+            let min = match (cpu.x[f.rs2] as u64) <= tmp {
                 true => cpu.x[f.rs2] as u64,
                 false => tmp as u64
             };
-            *(cpu.x[f.rs1] as *mut u64) = max;
+            *(cpu.x[f.rs1] as *mut u64) = min;
             cpu.x[f.rd] = tmp as i64;
         }
         Ok(())
@@ -1281,12 +1281,12 @@ const AMOMINU_W: Instruction = Instruction {
         let f = parse_format_r(word);
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const u32);
-            let max = match (cpu.x[f.rs2] as u32) <= tmp {
+            let min = match (cpu.x[f.rs2] as u32) <= tmp {
                 true => cpu.x[f.rs2] as u32,
                 false => tmp as u32
             };
-            *(cpu.x[f.rs1] as *mut u32) = max;
-            cpu.x[f.rd] = tmp as i64;
+            *(cpu.x[f.rs1] as *mut u32) = min;
+            cpu.x[f.rd] = tmp as i32 as i64;
         }
         Ok(())
     }
@@ -1310,7 +1310,7 @@ const AMOOR_W: Instruction = Instruction {
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const u32);
             *(cpu.x[f.rs1] as *mut u32) = ((cpu.x[f.rs2] as u32) | tmp) as u32;
-            cpu.x[f.rd] = tmp as i64;
+            cpu.x[f.rd] = tmp as i32 as i64;
         }
         Ok(())
     }
@@ -1334,7 +1334,7 @@ const AMOSWAP_W: Instruction = Instruction {
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const u32);
             *(cpu.x[f.rs1] as *mut u32) = cpu.x[f.rs2] as u32;
-            cpu.x[f.rd] = tmp as i64;
+            cpu.x[f.rd] = tmp as i32 as i64;
         }
         Ok(())
     }
@@ -1358,7 +1358,7 @@ const AMOXOR_W: Instruction = Instruction {
         unsafe {
             let tmp = *(cpu.x[f.rs1] as *const u32);
             *(cpu.x[f.rs1] as *mut u32) = ((cpu.x[f.rs2] as u32) ^ tmp) as u32;
-            cpu.x[f.rd] = tmp as i64;
+            cpu.x[f.rd] = tmp as i32 as i64;
         }
         Ok(())
     }
