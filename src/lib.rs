@@ -540,4 +540,13 @@ mod test {
             rv_test!("../test/rv64um-p-remw");
         }
     }
+
+    mod rv64_uc_p {
+        use super::*;
+
+        #[test]
+        fn rv64uc_p_rvc() {
+            rv_test!("../test/rv64uc-p-rvc");
+        }
+    }
 }
