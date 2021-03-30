@@ -470,4 +470,74 @@ mod test {
             rv_test!("../test/rv64ua-p-lrsc");
         }
     }
+
+
+    mod rv64_um_p {
+        use super::*;
+
+        #[test]
+        fn rv64um_p_div() {
+            rv_test!("../test/rv64um-p-div");
+        }
+
+        #[test]
+        fn rv64um_p_divu() {
+            rv_test!("../test/rv64um-p-divu");
+        }
+
+        #[test]
+        fn rv64um_p_divuw() {
+            rv_test!("../test/rv64um-p-divuw");
+        }
+
+        #[test]
+        fn rv64um_p_divw() {
+            rv_test!("../test/rv64um-p-divw");
+        }
+
+        #[test]
+        fn rv64um_p_mul() {
+            rv_test!("../test/rv64um-p-mul");
+        }
+
+        #[test]
+        fn rv64um_p_mulh() {
+            rv_test!("../test/rv64um-p-mulh");
+        }
+
+        #[test]
+        fn rv64um_p_mulhsu() {
+            rv_test!("../test/rv64um-p-mulhsu");
+        }
+
+        #[test]
+        fn rv64um_p_mulhu() {
+            rv_test!("../test/rv64um-p-mulhu");
+        }
+
+        #[test]
+        fn rv64um_p_mulw() {
+            rv_test!("../test/rv64um-p-mulw");
+        }
+
+        #[test]
+        fn rv64um_p_rem() {
+            rv_test!("../test/rv64um-p-rem");
+        }
+
+        #[test]
+        fn rv64um_p_remu() {
+            rv_test!("../test/rv64um-p-remu");
+        }
+
+        #[test]
+        fn rv64um_p_remuw() {
+            rv_test!("../test/rv64um-p-remuw");
+        }
+
+        #[test]
+        fn rv64um_p_remw() {
+            rv_test!("../test/rv64um-p-remw");
+        }
+    }
 }
