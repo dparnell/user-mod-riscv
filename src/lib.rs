@@ -5,6 +5,8 @@ mod test {
     extern crate elfloader;
 
     use super::cpu::*;
+    use super::cpu::instruction::Instruction;
+
     use elfloader::*;
 
     const IMG_BASE: u64 = 0x80000000;
@@ -96,20 +98,23 @@ mod test {
             }));
 
             cpu.update_pc(loader.get_target());
-            // let base_pc = cpu.get_pc();
+            let base_pc = cpu.get_pc();
+            let mut fuel = 1_000_000;
             loop {
-                // print!("pc= {:#x} =>", cpu.get_pc());
-                // print!(" {:#x}", cpu.get_pc() - base_pc + IMG_BASE as usize);
+                let this_pc = cpu.get_pc();
                 match cpu.tick() {
                     Ok(_) => {
-                        // println!(" good instruction");
-                        // println!(" regs = {:?}", cpu.x);
-                    }
+                        fuel = fuel - 1;
+                        if fuel == 0 {
+                            panic!("out of fuel");
+                        }
+                    },
                     Err(e) => {
                         match e.trap_type {
                             TrapType::Stop => {
                                 if e.value != 0 {
-                                    panic!("CPU test {:?} failed a4={:#x} t2={:#x}", e.value >> 1, cpu.x[14], cpu.x[6]);
+                                    let pc = this_pc - base_pc + IMG_BASE as usize;
+                                    panic!("CPU test {:?} failed pc={:#x} a4={:#x} t2={:#x}", e.value >> 1, pc, cpu.x[14], cpu.x[6]);
                                 } else {
                                     break;
                                 }
@@ -549,4 +554,15 @@ mod test {
             rv_test!("../test/rv64uc-p-rvc");
         }
     }
+
+    mod rv64_uf_p {
+        use super::*;
+
+        #[test]
+        #[ignore]
+        fn rv64uc_p_fadd() {
+            rv_test!("../test/rv64uf-p-fadd");
+        }
+    }
+
 }
