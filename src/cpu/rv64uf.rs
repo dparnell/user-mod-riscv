@@ -19,3 +19,19 @@ pub const FLW: Instruction = Instruction {
         Ok(())
     }
 };
+
+pub const FMV_X_W: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i32 as i64;
+        Ok(())
+    }
+};
+
+pub const FMV_W_X: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, f32::from_bits(cpu.x[f.rs1] as u32));
+        Ok(())
+    }
+};

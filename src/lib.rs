@@ -110,16 +110,16 @@ mod test {
                         }
                     },
                     Err(e) => {
+                        let pc = this_pc - base_pc + IMG_BASE as usize;
                         match e.trap_type {
                             TrapType::Stop => {
                                 if e.value != 0 {
-                                    let pc = this_pc - base_pc + IMG_BASE as usize;
-                                    panic!("CPU test {:?} failed pc={:#x} a4={:#x} t2={:#x}", e.value >> 1, pc, cpu.x[14], cpu.x[6]);
+                                    panic!("CPU test {:?} failed a0={:#x} a1={:#x} a2={:#x} a3={:#x} a4={:#x} t2={:#x}", e.value >> 1, cpu.x[10], cpu.x[11], cpu.x[12], cpu.x[13],cpu.x[14], cpu.x[6]);
                                 } else {
                                     break;
                                 }
                             },
-                            _ => panic!("CPU failure: {:?}", e)
+                            _ => panic!("CPU failure: pc = {:#x} - {:?}", pc, e)
                         }
                     }
                 }
@@ -559,7 +559,6 @@ mod test {
         use super::*;
 
         #[test]
-        #[ignore]
         fn rv64uc_p_fadd() {
             rv_test!("../test/rv64uf-p-fadd");
         }

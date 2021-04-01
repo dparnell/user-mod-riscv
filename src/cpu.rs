@@ -382,6 +382,13 @@ impl Cpu {
                     0b00001 => Some(&UNIMPLEMENTED), // FCVT_WU_S
                     _ => None
                 },
+                0b1110000 => match (word >> 20) & 31 {
+                    0b00000 => match (word >> 12) & 3 {
+                        0b000 => Some(&FMV_X_W),
+                        _ => None
+                    },
+                    _ => None
+                },
                 _ => None
             },
 

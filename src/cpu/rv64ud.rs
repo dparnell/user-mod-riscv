@@ -146,22 +146,6 @@ pub const FMV_X_D: Instruction = Instruction {
     }
 };
 
-pub const FMV_X_W: Instruction = Instruction {
-    operation: |cpu, word, _address| {
-        let f = instruction::parse_format_r(word);
-        cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i32 as i64;
-        Ok(())
-    }
-};
-
-pub const FMV_W_X: Instruction = Instruction {
-    operation: |cpu, word, _address| {
-        let f = instruction::parse_format_r(word);
-        cpu.f[f.rd] = f64::from_bits(cpu.x[f.rs1] as u32 as u64);
-        Ok(())
-    }
-};
-
 pub const FNMSUB_D: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r2(word);
