@@ -10,7 +10,7 @@ pub struct Instruction {
 impl Debug for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Instruction")
-            .field("name", self.name)
+            .field("name", &self.name)
             .finish()
     }
 }

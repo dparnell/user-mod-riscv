@@ -92,6 +92,7 @@ mod test {
 
             let mut cpu = Cpu::new();
             cpu.set_ecall_handler(Some(Instruction{
+                name: "ECALL",
                 operation: |cpu, _word, _address| {
                     Err(Trap { trap_type: TrapType::Stop, value: cpu.x[10] as u64 })
                 }
@@ -563,7 +564,7 @@ mod test {
         fn decode_frcsr() {
             let inst = Cpu::decode(0x00302573);
             assert!(inst.is_some());
-            assert_eq!("FRCSR", inst.unwrap().name);
+            assert_eq!("CSRRS", inst.unwrap().name);
         }
 
         #[test]
