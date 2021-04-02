@@ -11,6 +11,16 @@ pub const FADD_S: Instruction = Instruction {
     }
 };
 
+pub const FSUB_S: Instruction = Instruction {
+    name: "FSUB.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+
+        cpu.set_f32(f.rd, cpu.get_f32(f.rs1) - cpu.get_f32(f.rs2));
+        Ok(())
+    }
+};
+
 pub const FLW: Instruction = Instruction {
     name: "FLW",
     operation: |cpu, word, _address| {

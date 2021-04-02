@@ -373,7 +373,7 @@ impl Cpu {
 
             0b1010011 => match word >> 25 {
                 0b0000000 => Some(&FADD_S),
-                0b0000100 => Some(&UNIMPLEMENTED), // FSUB_S
+                0b0000100 => Some(&FSUB_S),
                 0b0001000 => Some(&FMUL_S), // FMUL_S
                 0b0001100 => Some(&UNIMPLEMENTED), // FDIV_S
                 0b0101100 => match (word >> 20) & 31 {
@@ -1026,10 +1026,7 @@ impl Cpu {
 
     pub fn write_csr(&mut self, address: u16, value: u64) {
         match address {
-            CSR_FFLAGS_ADDRESS => {
-                self.csr[CSR_FCSR_ADDRESS as usize] &= !0x1f;
-                self.csr[CSR_FCSR_ADDRESS as usize] |= value & 0x1f;
-            },
+            CSR_FFLAGS_ADDRESS => self.write_fflags(value),
             CSR_FRM_ADDRESS => {
                 self.csr[CSR_FCSR_ADDRESS as usize] &= !0xe0;
                 self.csr[CSR_FCSR_ADDRESS as usize] |= (value << 5) & 0xe0;
@@ -1060,7 +1057,7 @@ impl Cpu {
     }
 
     #[cfg(target_arch = "x86_64")]
-    pub fn read_fflags(&self) -> u64 {
+    fn read_fflags(&self) -> u64 {
         use core::arch::x86_64::*;
         let intel = unsafe { _mm_getcsr() };
 
@@ -1089,13 +1086,42 @@ impl Cpu {
             _ => 0
         };
 
-
         inexact | underflow | overflow | div_by_zero | invalid_op
     }
 
     #[cfg(not(target_arch = "x86_64"))]
-    pub fn read_fflags(&self) -> u64 {
+    fn read_fflags(&self) -> u64 {
         self.csr[CSR_FCSR_ADDRESS as usize] & 0x1f
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    fn write_fflags(&mut self, value: u64) {
+        use core::arch::x86_64::*;
+        let mut flags = unsafe { _mm_getcsr() } & !_MM_EXCEPT_MASK;
+
+        if value & 1 == 1 {
+            flags = flags | _MM_EXCEPT_INEXACT;
+        }
+        if value & 2 == 2 {
+            flags = flags | _MM_EXCEPT_OVERFLOW;
+        }
+        if value & 4 == 4 {
+            flags = flags | _MM_EXCEPT_OVERFLOW;
+        }
+        if value & 8 == 8 {
+            flags = flags | _MM_EXCEPT_DIV_ZERO;
+        }
+        if value & 16 == 16 {
+            flags = flags | _MM_EXCEPT_INVALID;
+        }
+
+        unsafe { _mm_setcsr(flags); }
+    }
+
+    #[cfg(not(target_arch = "x86_64"))]
+    fn write_fflags(&mut self, value: u64) {
+        self.csr[CSR_FCSR_ADDRESS as usize] &= !0x1f;
+        self.csr[CSR_FCSR_ADDRESS as usize] |= value & 0x1f;
     }
 }
 
