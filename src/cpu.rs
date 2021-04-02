@@ -383,7 +383,7 @@ impl Cpu {
                 0b0010000 => match (word >> 12) & 3 {
                     0b000 => Some(&FSGNJ_S),
                     0b001 => Some(&FSGNJN_S),
-                    0b010 => Some(&UNIMPLEMENTED), // FSGNJX_S
+                    0b010 => Some(&FSGNJX_S),
                     _ => None
                 },
                 0b0010100 => match (word >> 12) & 3 {
