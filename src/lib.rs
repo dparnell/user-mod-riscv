@@ -101,9 +101,22 @@ mod test {
             cpu.update_pc(loader.get_target());
             let base_pc = cpu.get_pc();
             let mut fuel = 1_000_000;
+
+            let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
+
             loop {
                 let pc = cpu.get_pc() - base_pc + IMG_BASE as usize;
-                // println!("pc = {:#x} - {:?}", pc, cpu);
+
+                if dump_instructions {
+                    let saved = cpu.pc;
+                    let op = cpu.fetch();
+                    let inst = Cpu::decode(op);
+                    cpu.pc = saved;
+
+                    if let Some(inst) = inst {
+                        println!("pc = {:#x} - {:?}, {:?}", pc, inst.name, cpu);
+                    }
+                }
 
                 match cpu.tick() {
                     Ok(_) => {

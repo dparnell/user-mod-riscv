@@ -119,7 +119,7 @@ x28-31	    t3-6	    temporary registers	Caller
  */
 
 pub struct Cpu {
-    pc: *mut u8,
+    pub pc: *mut u8,
     pub x: [i64; 32],
     pub f: [f64; 32],
     xlen: Xlen,
@@ -153,7 +153,7 @@ impl Cpu {
         }
     }
 
-    fn fetch(&mut self) -> u32 {
+    pub fn fetch(&mut self) -> u32 {
         unsafe {
             let result = *(self.pc as *const u32);
             match result & 3 {
@@ -986,8 +986,8 @@ impl Cpu {
 
     pub fn most_negative(&self) -> i64 {
         match self.xlen {
-            Xlen::Bit32 => std::i32::MIN as i64,
-            Xlen::Bit64 => std::i64::MIN
+            Xlen::Bit32 => i32::MIN as i64,
+            Xlen::Bit64 => i64::MIN
         }
     }
 
