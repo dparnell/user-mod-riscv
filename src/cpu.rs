@@ -133,6 +133,7 @@ impl Debug for Cpu {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Cpu")
             .field("pc", &self.pc)
+            .field("fcsr", &self.csr[CSR_FCSR_ADDRESS as usize])
             .field("x", &self.x)
             .field("f", &self.f)
             .finish()
@@ -380,8 +381,8 @@ impl Cpu {
                     _ => None
                 },
                 0b0010000 => match (word >> 12) & 3 {
-                    0b000 => Some(&UNIMPLEMENTED), // FSGNJ_S
-                    0b001 => Some(&UNIMPLEMENTED), // FSGNJN_S
+                    0b000 => Some(&FSGNJ_S),
+                    0b001 => Some(&FSGNJN_S),
                     0b010 => Some(&UNIMPLEMENTED), // FSGNJX_S
                     _ => None
                 },
@@ -402,6 +403,13 @@ impl Cpu {
                     },
                     _ => None
                 },
+                0b1111000 => match (word >> 20) & 31 {
+                    0b00000 => match (word >> 12) & 3 {
+                        0b000 => Some(&FMV_W_X),
+                        _ => None
+                    },
+                    _ => None
+                }
                 _ => None
             },
 
@@ -999,6 +1007,7 @@ impl Cpu {
             CSR_SSTATUS_ADDRESS => self.csr[CSR_MSTATUS_ADDRESS as usize] & 0x80000003000de162,
             CSR_SIE_ADDRESS => self.csr[CSR_MIE_ADDRESS as usize] & 0x222,
             CSR_SIP_ADDRESS => self.csr[CSR_MIP_ADDRESS as usize] & 0x222,
+            CSR_FCSR_ADDRESS => self.csr[CSR_FCSR_ADDRESS as usize] & 0xff,
             _ => self.csr[address as usize]
         }
     }

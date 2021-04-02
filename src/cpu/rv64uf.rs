@@ -50,3 +50,27 @@ pub const FSW: Instruction = Instruction {
         Ok(())
     }
 };
+
+pub const FSGNJ_S: Instruction = Instruction {
+    name: "FSGNJ.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let rs1_bits = cpu.get_f32(f.rs1).to_bits();
+        let rs2_bits = cpu.get_f32(f.rs2).to_bits();
+        let sign_bit = rs2_bits & 0x80000000;
+        cpu.set_f32(f.rd, f32::from_bits(sign_bit | (rs1_bits & 0x7fffffff)));
+        Ok(())
+    }
+};
+
+pub const FSGNJN_S: Instruction = Instruction {
+    name: "FSGNJN.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let rs1_bits = cpu.get_f32(f.rs1).to_bits();
+        let rs2_bits = cpu.get_f32(f.rs2).to_bits();
+        let sign_bit = (rs2_bits & 0x80000000) ^ 0x80000000;
+        cpu.set_f32(f.rd, f32::from_bits(sign_bit | (rs1_bits & 0x7fffffff)));
+        Ok(())
+    }
+};

@@ -15,6 +15,7 @@ impl Debug for Instruction {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatR {
     pub rd: usize,
     pub rs1: usize,
@@ -29,6 +30,7 @@ pub fn parse_format_r(word: u32) -> FormatR {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatU {
     pub rd: usize,
     pub imm: u64
@@ -47,6 +49,7 @@ pub fn parse_format_u(word: u32) -> FormatU {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatI {
     pub rd: usize,
     pub rs1: usize,
@@ -67,6 +70,7 @@ pub fn parse_format_i(word: u32) -> FormatI {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatJ {
     pub rd: usize,
     pub imm: u64
@@ -87,6 +91,7 @@ pub fn parse_format_j(word: u32) -> FormatJ {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatB {
     pub rs1: usize,
     pub rs2: usize,
@@ -109,6 +114,7 @@ pub fn parse_format_b(word: u32) -> FormatB {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatS {
     pub rs1: usize,
     pub rs2: usize,
@@ -130,6 +136,7 @@ pub fn parse_format_s(word: u32) -> FormatS {
     }
 }
 
+#[derive(Debug)]
 pub struct FormatCSR {
     pub csr: u16,
     pub rs: usize,
@@ -145,6 +152,7 @@ pub fn parse_format_csr(word: u32) -> FormatCSR {
 }
 
 // has rs3
+#[derive(Debug)]
 pub struct FormatR2 {
     pub rd: usize,
     pub rs1: usize,

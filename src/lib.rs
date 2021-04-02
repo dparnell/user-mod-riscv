@@ -575,9 +575,14 @@ mod test {
 
         #[test]
         fn decode_frcsr() {
+            // frcsr is a fake opcode
             let inst = Cpu::decode(0x00302573);
             assert!(inst.is_some());
             assert_eq!("CSRRS", inst.unwrap().name);
+            let f = instruction::parse_format_csr(0x00302573);
+            assert_eq!(3, f.csr);
+            assert_eq!(0, f.rs);
+            assert_eq!(10, f.rd);
         }
 
         #[test]
