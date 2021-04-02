@@ -2,6 +2,7 @@ use crate::cpu::instruction;
 use crate::cpu::instruction::Instruction;
 
 pub const FADD_S: Instruction = Instruction {
+    name: "FADD.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.set_f32(f.rd, cpu.get_f32(f.rs1) + cpu.get_f32(f.rs2));
@@ -10,6 +11,7 @@ pub const FADD_S: Instruction = Instruction {
 };
 
 pub const FLW: Instruction = Instruction {
+    name: "FLW",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_i(word);
         unsafe {
@@ -21,6 +23,7 @@ pub const FLW: Instruction = Instruction {
 };
 
 pub const FMV_X_W: Instruction = Instruction {
+    name: "FMV.X.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i32 as i64;
@@ -29,6 +32,7 @@ pub const FMV_X_W: Instruction = Instruction {
 };
 
 pub const FMV_W_X: Instruction = Instruction {
+    name: "FMV.W.X",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.set_f32(f.rd, f32::from_bits(cpu.x[f.rs1] as u32));
@@ -37,6 +41,7 @@ pub const FMV_W_X: Instruction = Instruction {
 };
 
 pub const FSW: Instruction = Instruction {
+    name: "FSW",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_s(word);
         unsafe {
