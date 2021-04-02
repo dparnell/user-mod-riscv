@@ -22,6 +22,15 @@ pub const FLW: Instruction = Instruction {
     }
 };
 
+pub const FMUL_S: Instruction = Instruction {
+    name: "FMUL.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2));
+        Ok(())
+    }
+};
+
 pub const FMV_X_W: Instruction = Instruction {
     name: "FMV.X.W",
     operation: |cpu, word, _address| {
@@ -87,3 +96,58 @@ pub const FSGNJX_S: Instruction = Instruction {
         Ok(())
     }
 };
+
+pub const FEQ_S: Instruction = Instruction {
+    name: "FEQ.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = match cpu.get_f32(f.rs1) == cpu.get_f32(f.rs2) {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+pub const FLE_S: Instruction = Instruction {
+    name: "FLE.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = match cpu.get_f32(f.rs1) <= cpu.get_f32(f.rs2) {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+pub const FLT_S: Instruction = Instruction {
+    name: "FLT.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = match cpu.get_f32(f.rs1) < cpu.get_f32(f.rs2) {
+            true => 1,
+            false => 0
+        };
+        Ok(())
+    }
+};
+
+pub const FCVT_S_W: Instruction = Instruction {
+    name: "FCVT.S.W",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, cpu.x[f.rs1] as i32 as f32);
+        Ok(())
+    }
+};
+
+pub const FCVT_S_WU: Instruction = Instruction {
+    name: "FCVT.S.WU",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, cpu.x[f.rs1] as u32 as f32);
+        Ok(())
+    }
+};
+

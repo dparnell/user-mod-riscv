@@ -374,7 +374,7 @@ impl Cpu {
             0b1010011 => match word >> 25 {
                 0b0000000 => Some(&FADD_S),
                 0b0000100 => Some(&UNIMPLEMENTED), // FSUB_S
-                0b0001000 => Some(&UNIMPLEMENTED), // FMUL_S
+                0b0001000 => Some(&FMUL_S), // FMUL_S
                 0b0001100 => Some(&UNIMPLEMENTED), // FDIV_S
                 0b0101100 => match (word >> 20) & 31 {
                     0b00000 => Some(&UNIMPLEMENTED), // FSQRT_S
@@ -403,11 +403,23 @@ impl Cpu {
                     },
                     _ => None
                 },
+                0b1010000 => match (word >> 12) & 3 {
+                    0b010 => Some(&FEQ_S),
+                    0b001 => Some(&FLT_S),
+                    0b000 => Some(&FLE_S),
+                    _ => None
+                },
                 0b1111000 => match (word >> 20) & 31 {
                     0b00000 => match (word >> 12) & 3 {
                         0b000 => Some(&FMV_W_X),
+                        0b001 => Some(&UNIMPLEMENTED), // FCLASS_S
                         _ => None
                     },
+                    _ => None
+                },
+                0b1101000 => match (word >> 20) & 31 {
+                    0b00000 => Some(&FCVT_S_W),
+                    0b00001 => Some(&FCVT_S_WU),
                     _ => None
                 }
                 _ => None
