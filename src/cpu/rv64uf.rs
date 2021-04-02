@@ -35,3 +35,13 @@ pub const FMV_W_X: Instruction = Instruction {
         Ok(())
     }
 };
+
+pub const FSW: Instruction = Instruction {
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_s(word);
+        unsafe {
+            *(cpu.x[f.rs1].wrapping_add(f.imm) as *mut u32) = cpu.f[f.rs2].to_bits() as u32;
+        }
+        Ok(())
+    }
+};

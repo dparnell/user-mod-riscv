@@ -6,6 +6,8 @@ use rv64ud::*;
 use rv64uf::*;
 use rv64ui::*;
 use rv64um::*;
+use std::fmt::{Debug, Formatter};
+use std::fmt;
 
 pub mod instruction;
 mod rv64ui;
@@ -57,7 +59,7 @@ const CSR_TIME_ADDRESS: u16 = 0xc01;
 const _CSR_INSERT_ADDRESS: u16 = 0xc02;
 const _CSR_MHARTID_ADDRESS: u16 = 0xf14;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Xlen {
     Bit32,
     Bit64
@@ -115,6 +117,7 @@ x18-27	    s2-11	    saved registers	Callee
 x28-31	    t3-6	    temporary registers	Caller
 
  */
+
 pub struct Cpu {
     pc: *mut u8,
     pub x: [i64; 32],
@@ -124,6 +127,16 @@ pub struct Cpu {
     reservation: u64, // @TODO: Should support multiple address reservations
     is_reservation_set: bool,
     ecall_handler: Option<Instruction>
+}
+
+impl Debug for Cpu {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Cpu")
+            .field("pc", &self.pc)
+            .field("x", &self.x)
+            .field("f", &self.f)
+            .finish()
+    }
 }
 
 impl Cpu {
@@ -353,7 +366,7 @@ impl Cpu {
             },
 
             0b0100111 => match (word >> 12) & 7 {
-                0b010 => Some(&UNIMPLEMENTED), // FSW
+                0b010 => Some(&FSW),
                 _ => None
             },
 
@@ -1029,6 +1042,7 @@ impl Cpu {
 
 
 pub const UNIMPLEMENTED: Instruction = Instruction {
+    name: "UNIMP",
     operation: |_cpu, word, _address| {
         Err(Trap{
             trap_type: TrapType::IllegalInstruction,
@@ -1037,9 +1051,9 @@ pub const UNIMPLEMENTED: Instruction = Instruction {
     }
 };
 
-
 // while this is a "machine" mode instruction it is needed for the official tests to pass
 const MRET: Instruction = Instruction {
+    name: "MRET",
     operation: |cpu, _word, _address| {
         cpu.pc = cpu.read_csr(CSR_MEPC_ADDRESS) as *mut u8;
 

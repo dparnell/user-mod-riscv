@@ -2,6 +2,7 @@ use crate::cpu::instruction;
 use crate::cpu::instruction::Instruction;
 
 pub const AMOADD_D: Instruction = Instruction {
+    name: "AMOADD.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -14,6 +15,7 @@ pub const AMOADD_D: Instruction = Instruction {
 };
 
 pub const AMOADD_W: Instruction = Instruction {
+    name: "AMOADD.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -26,6 +28,7 @@ pub const AMOADD_W: Instruction = Instruction {
 };
 
 pub const AMOAND_D: Instruction = Instruction {
+    name: "AMOAND.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -38,6 +41,7 @@ pub const AMOAND_D: Instruction = Instruction {
 };
 
 pub const AMOAND_W: Instruction = Instruction {
+    name: "AMOAND.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -50,6 +54,7 @@ pub const AMOAND_W: Instruction = Instruction {
 };
 
 pub const AMOMAX_D: Instruction = Instruction {
+    name: "AMOMAX.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -66,6 +71,7 @@ pub const AMOMAX_D: Instruction = Instruction {
 };
 
 pub const AMOMAX_W: Instruction = Instruction {
+    name: "AMOMAX.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -82,6 +88,7 @@ pub const AMOMAX_W: Instruction = Instruction {
 };
 
 pub const AMOMAXU_D: Instruction = Instruction {
+    name: "AMOMAXU.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -98,6 +105,7 @@ pub const AMOMAXU_D: Instruction = Instruction {
 };
 
 pub const AMOMAXU_W: Instruction = Instruction {
+    name: "AMOMAXU.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -114,6 +122,7 @@ pub const AMOMAXU_W: Instruction = Instruction {
 };
 
 pub const AMOMIN_D: Instruction = Instruction {
+    name: "AMOMIN.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -130,6 +139,7 @@ pub const AMOMIN_D: Instruction = Instruction {
 };
 
 pub const AMOMIN_W: Instruction = Instruction {
+    name: "AMOMIN.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -146,6 +156,7 @@ pub const AMOMIN_W: Instruction = Instruction {
 };
 
 pub const AMOMINU_D: Instruction = Instruction {
+    name: "AMOMINU.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -162,6 +173,7 @@ pub const AMOMINU_D: Instruction = Instruction {
 };
 
 pub const AMOMINU_W: Instruction = Instruction {
+    name: "AMOMINU.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -178,6 +190,7 @@ pub const AMOMINU_W: Instruction = Instruction {
 };
 
 pub const AMOOR_D: Instruction = Instruction {
+    name: "AMOOR.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -190,6 +203,7 @@ pub const AMOOR_D: Instruction = Instruction {
 };
 
 pub const AMOOR_W: Instruction = Instruction {
+    name: "AMOOR.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -202,6 +216,7 @@ pub const AMOOR_W: Instruction = Instruction {
 };
 
 pub const AMOSWAP_D: Instruction = Instruction {
+    name: "AMOSWAP.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -214,6 +229,7 @@ pub const AMOSWAP_D: Instruction = Instruction {
 };
 
 pub const AMOSWAP_W: Instruction = Instruction {
+    name: "AMOSWAP.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -226,6 +242,7 @@ pub const AMOSWAP_W: Instruction = Instruction {
 };
 
 pub const AMOXOR_D: Instruction = Instruction {
+    name: "AMOXOR.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -238,6 +255,7 @@ pub const AMOXOR_D: Instruction = Instruction {
 };
 
 pub const AMOXOR_W: Instruction = Instruction {
+    name: "AMOXOR.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         unsafe {
@@ -250,6 +268,7 @@ pub const AMOXOR_W: Instruction = Instruction {
 };
 
 pub const LR_D: Instruction = Instruction {
+    name: "LR.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         // @TODO: Implement properly
@@ -263,6 +282,7 @@ pub const LR_D: Instruction = Instruction {
 };
 
 pub const LR_W: Instruction = Instruction {
+    name: "LR.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         // @TODO: Implement properly
@@ -276,6 +296,7 @@ pub const LR_W: Instruction = Instruction {
 };
 
 pub const SC_D: Instruction = Instruction {
+    name: "SC.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         // @TODO: Implement properly
@@ -292,6 +313,7 @@ pub const SC_D: Instruction = Instruction {
 };
 
 pub const SC_W: Instruction = Instruction {
+    name: "SC.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         // @TODO: Implement properly

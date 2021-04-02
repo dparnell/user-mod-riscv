@@ -101,7 +101,9 @@ mod test {
             let base_pc = cpu.get_pc();
             let mut fuel = 1_000_000;
             loop {
-                let this_pc = cpu.get_pc();
+                let pc = cpu.get_pc() - base_pc + IMG_BASE as usize;
+                // println!("pc = {:#x} - {:?}", pc, cpu);
+
                 match cpu.tick() {
                     Ok(_) => {
                         fuel = fuel - 1;
@@ -110,7 +112,6 @@ mod test {
                         }
                     },
                     Err(e) => {
-                        let pc = this_pc - base_pc + IMG_BASE as usize;
                         match e.trap_type {
                             TrapType::Stop => {
                                 if e.value != 0 {
@@ -557,6 +558,28 @@ mod test {
 
     mod rv64_uf_p {
         use super::*;
+
+        #[test]
+        fn decode_frcsr() {
+            let inst = Cpu::decode(0x00302573);
+            assert!(inst.is_some());
+            assert_eq!("FRCSR", inst.unwrap().name);
+        }
+
+        #[test]
+        fn rv64uc_p_ldst() {
+            rv_test!("../test/rv64uf-p-ldst");
+        }
+
+        #[test]
+        fn rv64uc_p_move() {
+            rv_test!("../test/rv64uf-p-move");
+        }
+
+        #[test]
+        fn rv64uc_p_recoding() {
+            rv_test!("../test/rv64uf-p-recoding");
+        }
 
         #[test]
         fn rv64uc_p_fadd() {

@@ -1,7 +1,18 @@
 use crate::cpu::{Cpu, Trap};
+use std::fmt::{Debug, Formatter};
+use std::fmt;
 
 pub struct Instruction {
+    pub name: &'static str,
     pub operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
+}
+
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Instruction")
+            .field("name", self.name)
+            .finish()
+    }
 }
 
 pub struct FormatR {
