@@ -1014,7 +1014,7 @@ impl Cpu {
     pub fn read_csr(&self, address: u16) -> u64 {
         match address {
             // @TODO: Mask should consider of 32-bit mode
-            CSR_FFLAGS_ADDRESS => self.csr[CSR_FCSR_ADDRESS as usize] & 0x1f,
+            CSR_FFLAGS_ADDRESS => self.read_fflags(),
             CSR_FRM_ADDRESS => (self.csr[CSR_FCSR_ADDRESS as usize] >> 5) & 0x7,
             CSR_SSTATUS_ADDRESS => self.csr[CSR_MSTATUS_ADDRESS as usize] & 0x80000003000de162,
             CSR_SIE_ADDRESS => self.csr[CSR_MIE_ADDRESS as usize] & 0x222,
@@ -1059,6 +1059,44 @@ impl Cpu {
         self.csr[CSR_FCSR_ADDRESS as usize] |= 0x8;
     }
 
+    #[cfg(target_arch = "x86_64")]
+    pub fn read_fflags(&self) -> u64 {
+        use core::arch::x86_64::*;
+        let intel = unsafe { _mm_getcsr() };
+
+        let inexact = match intel & _MM_EXCEPT_INEXACT {
+            _MM_EXCEPT_INEXACT => 1,
+            _ => 0
+        };
+
+        let underflow = match intel & _MM_EXCEPT_UNDERFLOW {
+            _MM_EXCEPT_UNDERFLOW => 2,
+            _ => 0
+        };
+
+        let overflow = match intel & _MM_EXCEPT_OVERFLOW {
+            _MM_EXCEPT_OVERFLOW => 4,
+            _ => 0
+        };
+
+        let div_by_zero = match intel & _MM_EXCEPT_DIV_ZERO {
+            _MM_EXCEPT_DIV_ZERO => 8,
+            _ => 0
+        };
+
+        let invalid_op = match intel & _MM_EXCEPT_INVALID {
+            _MM_EXCEPT_INVALID => 16,
+            _ => 0
+        };
+
+
+        inexact | underflow | overflow | div_by_zero | invalid_op
+    }
+
+    #[cfg(not(target_arch = "x86_64"))]
+    pub fn read_fflags(&self) -> u64 {
+        self.csr[CSR_FCSR_ADDRESS as usize] & 0x1f
+    }
 }
 
 
