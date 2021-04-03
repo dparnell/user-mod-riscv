@@ -211,3 +211,39 @@ pub const FCVT_S_WU: Instruction = Instruction {
     }
 };
 
+pub const FCVT_L_S: Instruction = Instruction {
+    name: "FCVT.L.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = cpu.get_f32(f.rs1) as i64;
+        Ok(())
+    }
+};
+
+pub const FCVT_LU_S: Instruction = Instruction {
+    name: "FCVT.LU.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rd] = cpu.get_f32(f.rs1) as u64 as i64;
+        Ok(())
+    }
+};
+
+pub const FCVT_S_L: Instruction = Instruction {
+    name: "FCVT.S.L",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, cpu.x[f.rs1] as f32);
+        Ok(())
+    }
+};
+
+pub const FCVT_S_LU: Instruction = Instruction {
+    name: "FCVT.S.LU",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.set_f32(f.rd, cpu.x[f.rs1] as u64 as f32);
+
+        Ok(())
+    }
+};

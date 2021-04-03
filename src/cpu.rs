@@ -394,6 +394,8 @@ impl Cpu {
                 0b1100000 => match (word >> 20) & 31 {
                     0b00000 => Some(&UNIMPLEMENTED), // FCVT_W_S
                     0b00001 => Some(&UNIMPLEMENTED), // FCVT_WU_S
+                    0b00010 => Some(&FCVT_L_S),
+                    0b00011 => Some(&FCVT_LU_S),
                     _ => None
                 },
                 0b1110000 => match (word >> 20) & 31 {
@@ -420,6 +422,8 @@ impl Cpu {
                 0b1101000 => match (word >> 20) & 31 {
                     0b00000 => Some(&FCVT_S_W),
                     0b00001 => Some(&FCVT_S_WU),
+                    0b00010 => Some(&FCVT_S_L),
+                    0b00011 => Some(&FCVT_S_LU),
                     _ => None
                 }
                 _ => None

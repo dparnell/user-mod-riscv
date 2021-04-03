@@ -612,6 +612,11 @@ mod test {
         }
 
         #[test]
+        fn rv64uf_p_fcvt() {
+            rv_test!("../test/rv64uf-p-fcvt");
+        }
+
+        #[test]
         fn rv64uf_p_fdiv() {
             rv_test!("../test/rv64uf-p-fdiv");
         }
