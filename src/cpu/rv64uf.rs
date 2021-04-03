@@ -46,7 +46,13 @@ pub const FMV_X_W: Instruction = Instruction {
     name: "FMV.X.W",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i32 as i64;
+        let value = cpu.f[f.rs1].to_bits() as i32;
+
+        if value as u32 == 0xffc00000 {
+            cpu.x[f.rd] = 0x7fc00000;
+        } else {
+            cpu.x[f.rd] = value as i64;
+        }
         Ok(())
     }
 };
