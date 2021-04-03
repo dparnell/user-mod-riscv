@@ -1053,7 +1053,13 @@ impl Cpu {
     }
 
     pub fn set_fcsr_dz(&mut self) {
-        self.csr[CSR_FCSR_ADDRESS as usize] |= 0x8;
+        let flags = self.read_fflags();
+        self.write_fflags(flags | 8);
+    }
+
+    pub fn set_fcsr_nv(&mut self) {
+        let flags = self.read_fflags();
+        self.write_fflags(flags | 16);
     }
 
     #[cfg(target_arch = "x86_64")]

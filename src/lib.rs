@@ -586,28 +586,33 @@ mod test {
         }
 
         #[test]
-        fn rv64uc_p_ldst() {
+        fn rv64uf_p_ldst() {
             rv_test!("../test/rv64uf-p-ldst");
         }
 
         #[test]
         #[ignore]
-        fn rv64uc_p_move() {
+        fn rv64uf_p_move() {
             rv_test!("../test/rv64uf-p-move");
         }
 
         #[test]
-        fn rv64uc_p_recoding() {
+        fn rv64uf_p_recoding() {
             rv_test!("../test/rv64uf-p-recoding");
         }
 
         #[test]
-        fn rv64uc_p_fadd() {
+        fn rv64uf_p_fadd() {
             rv_test!("../test/rv64uf-p-fadd");
         }
 
         #[test]
-        fn rv64uc_p_fdiv() {
+        fn rv64uf_p_fcmp() {
+            rv_test!("../test/rv64uf-p-fcmp");
+        }
+
+        #[test]
+        fn rv64uf_p_fdiv() {
             rv_test!("../test/rv64uf-p-fdiv");
         }
     }

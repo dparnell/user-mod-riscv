@@ -161,7 +161,13 @@ pub const FLE_S: Instruction = Instruction {
     name: "FLE.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rd] = match cpu.get_f32(f.rs1) <= cpu.get_f32(f.rs2) {
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
+
+        if v1.is_nan() || v2.is_nan() {
+            cpu.set_fcsr_nv();
+        }
+        cpu.x[f.rd] = match v1 <= v2 {
             true => 1,
             false => 0
         };
@@ -173,7 +179,13 @@ pub const FLT_S: Instruction = Instruction {
     name: "FLT.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rd] = match cpu.get_f32(f.rs1) < cpu.get_f32(f.rs2) {
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
+
+        if v1.is_nan() || v2.is_nan() {
+            cpu.set_fcsr_nv();
+        }
+        cpu.x[f.rd] = match v1 < v2 {
             true => 1,
             false => 0
         };
