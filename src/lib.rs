@@ -605,6 +605,11 @@ mod test {
         fn rv64uc_p_fadd() {
             rv_test!("../test/rv64uf-p-fadd");
         }
+
+        #[test]
+        fn rv64uc_p_fdiv() {
+            rv_test!("../test/rv64uf-p-fdiv");
+        }
     }
 
 }

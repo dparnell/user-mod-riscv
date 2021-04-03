@@ -374,10 +374,10 @@ impl Cpu {
             0b1010011 => match word >> 25 {
                 0b0000000 => Some(&FADD_S),
                 0b0000100 => Some(&FSUB_S),
-                0b0001000 => Some(&FMUL_S), // FMUL_S
-                0b0001100 => Some(&UNIMPLEMENTED), // FDIV_S
+                0b0001000 => Some(&FMUL_S),
+                0b0001100 => Some(&FDIV_S),
                 0b0101100 => match (word >> 20) & 31 {
-                    0b00000 => Some(&UNIMPLEMENTED), // FSQRT_S
+                    0b00000 => Some(&FSQRT_S),
                     _ => None
                 },
                 0b0010000 => match (word >> 12) & 3 {
