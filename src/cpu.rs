@@ -1086,7 +1086,8 @@ impl Cpu {
             _ => 0
         };
 
-        inexact | underflow | overflow | div_by_zero | invalid_op
+        let flags = self.csr[CSR_FCSR_ADDRESS as usize] & !0x1f;
+        flags | inexact | underflow | overflow | div_by_zero | invalid_op
     }
 
     #[cfg(not(target_arch = "x86_64"))]

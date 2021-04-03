@@ -591,6 +591,7 @@ mod test {
         }
 
         #[test]
+        #[ignore]
         fn rv64uc_p_move() {
             rv_test!("../test/rv64uf-p-move");
         }
