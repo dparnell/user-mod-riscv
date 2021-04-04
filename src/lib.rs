@@ -132,7 +132,7 @@ mod test {
                             if i > 0 {
                                 print!(", ");
                             }
-                            if cpu.f[i] == old_f[i] {
+                            if cpu.f[i].to_bits() == old_f[i].to_bits() {
                                 print!("{:?}", cpu.f[i]);
                             } else {
                                 print!("\x1b[31m{:?}\x1b[0m", cpu.f[i]);
