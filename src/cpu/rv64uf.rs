@@ -233,6 +233,7 @@ pub const FCVT_LU_S: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.get_f32(f.rs1);
+        println!("v = {:?}", v);
         if v.is_nan() || v <= -1.0 {
             cpu.set_fcsr_nv();
             cpu.x[f.rd] = 0;

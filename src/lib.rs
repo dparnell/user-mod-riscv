@@ -103,6 +103,8 @@ mod test {
             let mut fuel = 1_000_000;
 
             let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
+            let mut old_x = cpu.x.clone();
+            let mut old_f = cpu.f.clone();
 
             loop {
                 let pc = cpu.get_pc() - base_pc + IMG_BASE as usize;
@@ -114,8 +116,33 @@ mod test {
                     cpu.pc = saved;
 
                     if let Some(inst) = inst {
-                        println!("pc = {:#x} - {:?}, {:?}", pc, inst.name, cpu);
+                        print!("pc = {:#x} - {:?}, Cpu - x: [", pc, inst.name);
+                        for i in 0..32 {
+                            if i > 0 {
+                                print!(", ");
+                            }
+                            if cpu.x[i] == old_x[i] {
+                                print!("{:?}", cpu.x[i]);
+                            } else {
+                                print!("\x1b[31m{:?}\x1b[0m", cpu.x[i]);
+                            }
+                        }
+                        print!("], f: [");
+                        for i in 0..32 {
+                            if i > 0 {
+                                print!(", ");
+                            }
+                            if cpu.f[i] == old_f[i] {
+                                print!("{:?}", cpu.f[i]);
+                            } else {
+                                print!("\x1b[31m{:?}\x1b[0m", cpu.f[i]);
+                            }
+                        }
+                        println!("]");
                     }
+
+                    old_x = cpu.x.clone();
+                    old_f = cpu.f.clone();
                 }
 
                 match cpu.tick() {
