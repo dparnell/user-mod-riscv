@@ -199,7 +199,7 @@ impl Cpu {
         }
     }
 
-    pub fn get_f32(&self, reg: usize) -> f32 {
+    pub fn get_f32(&mut self, reg: usize) -> f32 {
         // only consider the bottom 32 bits of the register
         f32::from_bits(self.f[reg].to_bits() as u32)
     }
@@ -392,8 +392,8 @@ impl Cpu {
                     _ => None
                 },
                 0b1100000 => match (word >> 20) & 31 {
-                    0b00000 => Some(&UNIMPLEMENTED), // FCVT_W_S
-                    0b00001 => Some(&UNIMPLEMENTED), // FCVT_WU_S
+                    0b00000 => Some(&FCVT_W_S),
+                    0b00001 => Some(&FCVT_WU_S),
                     0b00010 => Some(&FCVT_L_S),
                     0b00011 => Some(&FCVT_LU_S),
                     _ => None
@@ -1054,6 +1054,11 @@ impl Cpu {
                 self.csr[address as usize] = value;
             }
         };
+    }
+
+    pub fn set_fcsr_nx(&mut self) {
+        let flags = self.read_fflags();
+        self.write_fflags(flags | 1);
     }
 
     pub fn set_fcsr_dz(&mut self) {

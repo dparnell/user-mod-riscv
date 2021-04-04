@@ -5,8 +5,10 @@ pub const FADD_S: Instruction = Instruction {
     name: "FADD.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
 
-        cpu.set_f32(f.rd, cpu.get_f32(f.rs1) + cpu.get_f32(f.rs2));
+        cpu.set_f32(f.rd, v1 + v2);
         Ok(())
     }
 };
@@ -36,8 +38,10 @@ pub const FSUB_S: Instruction = Instruction {
     name: "FSUB.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
 
-        cpu.set_f32(f.rd, cpu.get_f32(f.rs1) - cpu.get_f32(f.rs2));
+        cpu.set_f32(f.rd, v1 - v2);
         Ok(())
     }
 };
@@ -46,8 +50,9 @@ pub const FSQRT_S: Instruction = Instruction {
     name: "FSQRT.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
+        let v = cpu.get_f32(f.rs1);
 
-        cpu.set_f32(f.rd, cpu.get_f32(f.rs1).sqrt());
+        cpu.set_f32(f.rd, v.sqrt());
         Ok(())
     }
 };
@@ -68,7 +73,10 @@ pub const FMUL_S: Instruction = Instruction {
     name: "FMUL.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.set_f32(f.rd, cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2));
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
+
+        cpu.set_f32(f.rd, v1 * v2);
         Ok(())
     }
 };
@@ -163,10 +171,10 @@ pub const FLE_S: Instruction = Instruction {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.get_f32(f.rs1);
         let v2 = cpu.get_f32(f.rs2);
-
         if v1.is_nan() || v2.is_nan() {
             cpu.set_fcsr_nv();
         }
+
         cpu.x[f.rd] = match v1 <= v2 {
             true => 1,
             false => 0
@@ -181,10 +189,10 @@ pub const FLT_S: Instruction = Instruction {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.get_f32(f.rs1);
         let v2 = cpu.get_f32(f.rs2);
-
         if v1.is_nan() || v2.is_nan() {
             cpu.set_fcsr_nv();
         }
+
         cpu.x[f.rd] = match v1 < v2 {
             true => 1,
             false => 0
@@ -224,7 +232,16 @@ pub const FCVT_LU_S: Instruction = Instruction {
     name: "FCVT.LU.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rd] = cpu.get_f32(f.rs1) as u64 as i64;
+        let v = cpu.get_f32(f.rs1);
+        if v.is_nan() || v <= -1.0 {
+            cpu.set_fcsr_nv();
+            cpu.x[f.rd] = 0;
+        } else {
+            cpu.x[f.rd] = v as u64 as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
         Ok(())
     }
 };
@@ -244,6 +261,51 @@ pub const FCVT_S_LU: Instruction = Instruction {
         let f = instruction::parse_format_r(word);
         cpu.set_f32(f.rd, cpu.x[f.rs1] as u64 as f32);
 
+        Ok(())
+    }
+};
+
+pub const FCVT_W_S: Instruction = Instruction {
+    name: "FCVT.W.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v = cpu.get_f32(f.rs1);
+        if v.is_nan() {
+            cpu.set_fcsr_nv();
+            cpu.x[f.rd] = 0;
+        } else {
+            cpu.x[f.rd] = v as i32 as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
+        Ok(())
+    }
+};
+
+pub const FCVT_WU_S: Instruction = Instruction {
+    name: "FCVT.WU.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v = cpu.get_f32(f.rs1);
+
+        if v.is_nan() || v <= -1.0 {
+            cpu.set_fcsr_nv();
+            cpu.x[f.rd] = 0;
+        } else {
+            let u = v as u32;
+
+            // apparently we need to sign extend the value
+            let upper: u64 = match u & 0x80000000 {
+                0 => 0,
+                _ => 0xffffffff00000000
+            };
+
+            cpu.x[f.rd] = (u as u64 | upper) as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
         Ok(())
     }
 };
