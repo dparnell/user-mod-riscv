@@ -700,5 +700,10 @@ mod test {
         fn rv64ud_p_fmin() {
             rv_test!("../test/rv64ud-p-fmin");
         }
+
+        #[test]
+        fn rv64ud_p_ldst() {
+            rv_test!("../test/rv64ud-p-ldst");
+        }
     }
 }
