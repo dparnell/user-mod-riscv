@@ -1,5 +1,9 @@
 use crate::cpu::instruction;
 use crate::cpu::instruction::Instruction;
+use std::cmp::min;
+
+pub const CANONICAL_NAN: u32 = 0x7fc00000;
+pub const SIGNALING_NAN: u32 = 0x7fff0000;
 
 pub const FADD_S: Instruction = Instruction {
     name: "FADD.S",
@@ -88,7 +92,7 @@ pub const FMV_X_W: Instruction = Instruction {
         let value = cpu.f[f.rs1].to_bits() as i32;
 
         if value as u32 == 0xffc00000 {
-            cpu.x[f.rd] = 0x7fc00000;
+            cpu.x[f.rd] = CANONICAL_NAN as i64;
         } else {
             cpu.x[f.rd] = value as i64;
         }
@@ -345,6 +349,83 @@ pub const FCVT_WU_S: Instruction = Instruction {
                 cpu.set_fcsr_nx();
             }
         }
+        Ok(())
+    }
+};
+
+pub const FMIN_S: Instruction = Instruction {
+    name: "FMIN.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
+
+        let mut result = match (v1.is_sign_positive(), v2.is_sign_positive()) {
+            (true, true) => match v1 < v2 {
+                true => v1,
+                false => v2
+            },
+            (true, false) => v2,
+            (false, true) => v1,
+            (false, false) => match v1 < v2 {
+                true => v1,
+                false => v2
+            }
+        };
+
+        if v1.is_nan() || v2.is_nan() {
+            if v1.is_nan() && v2.is_nan() {
+                if v1.to_bits() == SIGNALING_NAN || v2.to_bits() == SIGNALING_NAN {
+                    cpu.set_fcsr_nv();
+                }
+                result = f32::from_bits(CANONICAL_NAN);
+            } else if v1.is_nan() {
+                result = v2;
+            } else {
+                result = v1;
+            }
+        }
+
+        cpu.set_f32(f.rd, result);
+        Ok(())
+    }
+};
+
+
+pub const FMAX_S: Instruction = Instruction {
+    name: "FMAX.S",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v1 = cpu.get_f32(f.rs1);
+        let v2 = cpu.get_f32(f.rs2);
+
+        let mut result = match (v1.is_sign_positive(), v2.is_sign_positive()) {
+            (true, true) => match v1 > v2 {
+                true => v1,
+                false => v2
+            },
+            (true, false) => v1,
+            (false, true) => v2,
+            (false, false) => match v1 > v2 {
+                true => v1,
+                false => v2
+            }
+        };
+
+        if v1.is_nan() || v2.is_nan() {
+            if v1.is_nan() && v2.is_nan() {
+                if v1.to_bits() == SIGNALING_NAN || v2.to_bits() == SIGNALING_NAN {
+                    cpu.set_fcsr_nv();
+                }
+                result = f32::from_bits(CANONICAL_NAN);
+            } else if v1.is_nan() {
+                result = v2;
+            } else {
+                result = v1;
+            }
+        }
+
+        cpu.set_f32(f.rd, result);
         Ok(())
     }
 };

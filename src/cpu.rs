@@ -387,8 +387,8 @@ impl Cpu {
                     _ => None
                 },
                 0b0010100 => match (word >> 12) & 3 {
-                    0b000 => Some(&UNIMPLEMENTED), // FMIN_S
-                    0b001 => Some(&UNIMPLEMENTED), // FMAX_S
+                    0b000 => Some(&FMIN_S),
+                    0b001 => Some(&FMAX_S),
                     _ => None
                 },
                 0b1100000 => match (word >> 20) & 31 {
