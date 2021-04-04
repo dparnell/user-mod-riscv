@@ -272,7 +272,13 @@ pub const FSQRT_D: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
 
-        cpu.f[f.rd] = cpu.f[f.rs1].sqrt();
+        let v = cpu.f[f.rs1];
+        if v >= 0.0 {
+            cpu.f[f.rd] = v.sqrt();
+        } else {
+            cpu.f[f.rd] = f64::from_bits(CANONICAL_NAN);
+            cpu.set_fcsr_nv();
+        }
         Ok(())
     }
 };

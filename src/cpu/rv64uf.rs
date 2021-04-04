@@ -54,8 +54,12 @@ pub const FSQRT_S: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.get_f32(f.rs1);
-
-        cpu.set_f32(f.rd, v.sqrt());
+        if v >= 0.0 {
+            cpu.set_f32(f.rd, v.sqrt());
+        } else {
+            cpu.set_f32(f.rd, f32::from_bits(CANONICAL_NAN));
+            cpu.set_fcsr_nv();
+        }
         Ok(())
     }
 };
