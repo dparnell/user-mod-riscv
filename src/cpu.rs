@@ -430,22 +430,22 @@ impl Cpu {
             },
 
             0b1000011 => match (word >> 25) & 3 {
-                0b00 => Some(&UNIMPLEMENTED), // FMADD_S
+                0b00 => Some(&FMADD_S),
                 _ => None
             },
 
             0b1000111 => match (word >> 25) & 3 {
-                0b00 => Some(&UNIMPLEMENTED), // FMSUB_S
+                0b00 => Some(&FMSUB_S),
                 _ => None
             },
 
             0b1001011 => match (word >> 25) & 3 {
-                0b00 => Some(&UNIMPLEMENTED), // FNMSUB_S
+                0b00 => Some(&FNMSUB_S),
                 _ => None
             },
 
             0b1001111 => match (word >> 25) & 3 {
-                0b00 => Some(&UNIMPLEMENTED), // FNMADD_S
+                0b00 => Some(&FNMADD_S),
                 _ => None
             },
 

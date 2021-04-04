@@ -429,3 +429,47 @@ pub const FMAX_S: Instruction = Instruction {
         Ok(())
     }
 };
+
+pub const FMADD_S: Instruction = Instruction {
+    name: "FMADD.S",
+    operation: |cpu, word, _address| {
+        // @TODO: Update fcsr if needed?
+        let f = instruction::parse_format_r2(word);
+        let v = cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2) + cpu.get_f32(f.rs3);
+        cpu.set_f32(f.rd, v);
+        Ok(())
+    }
+};
+
+pub const FMSUB_S: Instruction = Instruction {
+    name: "FMSUB.S",
+    operation: |cpu, word, _address| {
+        // @TODO: Update fcsr if needed?
+        let f = instruction::parse_format_r2(word);
+        let v = cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2) - cpu.get_f32(f.rs3);
+        cpu.set_f32(f.rd, v);
+        Ok(())
+    }
+};
+
+pub const FNMADD_S: Instruction = Instruction {
+    name: "FNMADD.S",
+    operation: |cpu, word, _address| {
+        // @TODO: Update fcsr if needed?
+        let f = instruction::parse_format_r2(word);
+        let v = -(cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2)) - cpu.get_f32(f.rs3);
+        cpu.set_f32(f.rd, v);
+        Ok(())
+    }
+};
+
+pub const FNMSUB_S: Instruction = Instruction {
+    name: "FNMSUB.S",
+    operation: |cpu, word, _address| {
+        // @TODO: Update fcsr if needed?
+        let f = instruction::parse_format_r2(word);
+        let v = -(cpu.get_f32(f.rs1) * cpu.get_f32(f.rs2)) + cpu.get_f32(f.rs3);
+        cpu.set_f32(f.rd, v);
+        Ok(())
+    }
+};
