@@ -77,8 +77,17 @@ pub const FCVT_W_D: Instruction = Instruction {
     name: "FCVT.W.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        // Is this implementation correct?
-        cpu.x[f.rd] = cpu.f[f.rs1] as u32 as i32 as i64;
+        let v = cpu.f[f.rs1];
+
+        if v.is_nan() {
+            cpu.set_fcsr_nv();
+            cpu.x[f.rd] = 0x7fffffffffffffff;
+        } else {
+            cpu.x[f.rd] = v as i32 as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
         Ok(())
     }
 };
@@ -418,13 +427,23 @@ pub const FCVT_L_D: Instruction = Instruction {
     name: "FCVT.L.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rs1] = cpu.f[f.rd] as i64;
+        let v = cpu.get_f32(f.rs1);
+
+        if v.is_nan() {
+            cpu.set_fcsr_nv();
+            cpu.x[f.rd] = 0x7fffffffffffffff;
+        } else {
+            cpu.x[f.rd] = v as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
         Ok(())
     }
 };
 
 pub const FCVT_LU_D: Instruction = Instruction {
-    name: "FCVT.L.D",
+    name: "FCVT.LU.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rs1] = cpu.f[f.rd] as u64 as i64;
