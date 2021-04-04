@@ -711,5 +711,15 @@ mod test {
         fn rv64ud_p_move() {
             rv_test!("../test/rv64ud-p-move");
         }
+
+        #[test]
+        fn rv64ud_p_recoding() {
+            rv_test!("../test/rv64ud-p-recoding");
+        }
+
+        #[test]
+        fn rv64ud_p_structural() {
+            rv_test!("../test/rv64ud-p-structural");
+        }
     }
 }
