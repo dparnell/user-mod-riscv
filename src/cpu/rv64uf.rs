@@ -1,6 +1,5 @@
 use crate::cpu::instruction;
 use crate::cpu::instruction::Instruction;
-use std::cmp::min;
 
 pub const CANONICAL_NAN: u32 = 0x7fc00000;
 pub const SIGNALING_NAN: u32 = 0x7fff0000;

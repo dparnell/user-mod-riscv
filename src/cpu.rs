@@ -363,27 +363,43 @@ impl Cpu {
 
             0b0000111 => match (word >> 12) & 7 {
                 0b010 => Some(&FLW),
+                0b011 => Some(&FLD),
                 _ => None
             },
 
             0b0100111 => match (word >> 12) & 7 {
                 0b010 => Some(&FSW),
+                0b011 => Some(&FSD),
                 _ => None
             },
 
             0b1010011 => match word >> 25 {
                 0b0000000 => Some(&FADD_S),
+                0b0000001 => Some(&FADD_D),
                 0b0000100 => Some(&FSUB_S),
+                0b0000101 => Some(&FSUB_D),
                 0b0001000 => Some(&FMUL_S),
+                0b0001001 => Some(&FMUL_D),
                 0b0001100 => Some(&FDIV_S),
+                0b0001101 => Some(&FDIV_D),
                 0b0101100 => match (word >> 20) & 31 {
                     0b00000 => Some(&FSQRT_S),
+                    _ => None
+                },
+                0b0101101 => match (word >> 20) & 31 {
+                    0b00000 => Some(&FSQRT_D),
                     _ => None
                 },
                 0b0010000 => match (word >> 12) & 3 {
                     0b000 => Some(&FSGNJ_S),
                     0b001 => Some(&FSGNJN_S),
                     0b010 => Some(&FSGNJX_S),
+                    _ => None
+                },
+                0b0010001 => match (word >> 12) & 3 {
+                    0b000 => Some(&FSGNJ_D),
+                    0b001 => Some(&FSGNJN_D),
+                    0b010 => Some(&FSGNJX_D),
                     _ => None
                 },
                 0b0010100 => match (word >> 12) & 3 {
@@ -425,27 +441,81 @@ impl Cpu {
                     0b00010 => Some(&FCVT_S_L),
                     0b00011 => Some(&FCVT_S_LU),
                     _ => None
-                }
+                },
+                0b0100000 => match (word >> 20) & 31 {
+                    0b00001 => Some(&FCVT_S_D),
+                    _ => None
+                },
+                0b0100001 => match (word >> 20) & 31 {
+                    0b00000 => Some(&FCVT_D_S),
+                    _ => None
+                },
+
+                0b1010001 => match (word >> 12) & 3 {
+                    0b010 => Some(&FEQ_D),
+                    0b001 => Some(&FLT_D),
+                    0b000 => Some(&FLE_D),
+                    _ => None
+                },
+                0b1110001 => match (word >> 20) & 31 {
+                    0b00000 => match (word >> 12) & 3 {
+                        0b000 => Some(&FMV_X_D),
+                        0b001 => Some(&UNIMPLEMENTED), // FCLASS.D
+                        _ => None
+                    },
+                    _ => None
+                },
+                0b1100001 => match (word >> 20) & 31 {
+                    0b00000 => Some(&FCVT_W_D),
+                    0b00001 => Some(&FCVT_WU_D),
+                    0b00010 => Some(&FCVT_L_D),
+                    0b00011 => Some(&FCVT_LU_D),
+                    _ => None
+                },
+                0b1101001 => match (word >> 20) & 31 {
+                    0b00000 => Some(&FCVT_D_W),
+                    0b00001 => Some(&FCVT_D_WU),
+                    0b00010 => Some(&FCVT_D_L),
+                    0b00011 => Some(&FCVT_D_LU),
+                    _ => None
+                },
+                0b1111001 => match (word >> 20) & 31 {
+                    0b00000 => match (word >> 12) & 3 {
+                        0b000 => Some(&FMV_D_X),
+                        _ => None
+                    },
+                    _ => None
+                },
                 _ => None
             },
 
             0b1000011 => match (word >> 25) & 3 {
                 0b00 => Some(&FMADD_S),
+                0b01 => Some(&FMADD_D),
+                _ => None
+            },
+
+            0b0010101 => match (word >> 25) & 3 {
+                0b00 => Some(&FMIN_D),
+                0b01 => Some(&FMAX_D),
                 _ => None
             },
 
             0b1000111 => match (word >> 25) & 3 {
                 0b00 => Some(&FMSUB_S),
+                0b01 => Some(&FMSUB_D),
                 _ => None
             },
 
             0b1001011 => match (word >> 25) & 3 {
                 0b00 => Some(&FNMSUB_S),
+                0b01 => Some(&FNMSUB_D),
                 _ => None
             },
 
             0b1001111 => match (word >> 25) & 3 {
                 0b00 => Some(&FNMADD_S),
+                0b01 => Some(&FNMADD_D),
                 _ => None
             },
 

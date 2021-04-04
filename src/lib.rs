@@ -518,7 +518,6 @@ mod test {
         }
     }
 
-
     mod rv64_um_p {
         use super::*;
 
@@ -664,4 +663,12 @@ mod test {
         }
     }
 
+    mod rv64_ud_p {
+        use super::*;
+
+        #[test]
+        fn rv64ud_p_fadd() {
+            rv_test!("../test/rv64ud-p-fadd");
+        }
+    }
 }

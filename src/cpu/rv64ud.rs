@@ -1,6 +1,10 @@
 use crate::cpu::instruction;
 use crate::cpu::instruction::Instruction;
 
+pub const CANONICAL_NAN: u64 = 0x7ff8000000000000;
+pub const SIGNALING_NAN: u64 = 0x7fff000000000000;
+
+
 pub const FADD_D: Instruction = Instruction {
     name: "FADD.D",
     operation: |cpu, word, _address| {
@@ -15,6 +19,15 @@ pub const FCVT_D_L: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.x[f.rs1] as f64;
+        Ok(())
+    }
+};
+
+pub const FCVT_D_LU: Instruction = Instruction {
+    name: "FCVT.D.LU",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.f[f.rd] = cpu.x[f.rs1] as u64 as f64;
         Ok(())
     }
 };
@@ -133,6 +146,17 @@ pub const FMADD_D: Instruction = Instruction {
     }
 };
 
+pub const FMSUB_D: Instruction = Instruction {
+    name: "FMSUB.D",
+    operation: |cpu, word, _address| {
+        // @TODO: Update fcsr if needed?
+        let f = instruction::parse_format_r2(word);
+        cpu.f[f.rd] = cpu.f[f.rs1] * cpu.f[f.rs2] - cpu.f[f.rs3];
+        Ok(())
+    }
+};
+
+
 pub const FMUL_D: Instruction = Instruction {
     name: "FMUL.D",
     operation: |cpu, word, _address| {
@@ -157,6 +181,15 @@ pub const FMV_X_D: Instruction = Instruction {
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i64;
+        Ok(())
+    }
+};
+
+pub const FNMADD_D: Instruction = Instruction {
+    name: "FNMADD.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r2(word);
+        cpu.f[f.rd] = -(cpu.f[f.rs1] * cpu.f[f.rs2]) - cpu.f[f.rs3];
         Ok(())
     }
 };
@@ -188,6 +221,198 @@ pub const FLD: Instruction = Instruction {
         unsafe {
             cpu.f[f.rd] = f64::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u64));
         }
+        Ok(())
+    }
+};
+
+pub const FSUB_D: Instruction = Instruction {
+    name: "FSUB.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v1 = cpu.f[f.rs1];
+        let v2 = cpu.f[f.rs2];
+
+        if v1.is_infinite() && v2.is_infinite() {
+            cpu.f[f.rd] = f64::from_bits(CANONICAL_NAN);
+            cpu.set_fcsr_nv();
+        } else {
+            cpu.f[f.rd] = v1 - v2;
+        }
+
+        Ok(())
+    }
+};
+
+pub const FSQRT_D: Instruction = Instruction {
+    name: "FSQRT.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+
+        cpu.f[f.rd] = cpu.f[f.rs1].sqrt();
+        Ok(())
+    }
+};
+
+pub const FSGNJ_D: Instruction = Instruction {
+    name: "FSGNJ.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let rs1_bits = cpu.f[f.rs1].to_bits();
+        let rs2_bits = cpu.f[f.rs2].to_bits();
+        let sign_bit = rs2_bits & 0x8000000000000000;
+        cpu.f[f.rd] = f64::from_bits(sign_bit | (rs1_bits & 0x7fffffffffffffff));
+        Ok(())
+    }
+};
+
+pub const FSGNJN_D: Instruction = Instruction {
+    name: "FSGNJN.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let rs1_bits = cpu.f[f.rs1].to_bits();
+        let rs2_bits = cpu.f[f.rs2].to_bits();
+        let sign_bit = (rs2_bits & 0x8000000000000000) ^ 0x8000000000000000;
+        cpu.f[f.rd] = f64::from_bits(sign_bit | (rs1_bits & 0x7fffffffffffffff));
+        Ok(())
+    }
+};
+
+pub const FSGNJX_D: Instruction = Instruction {
+    name: "FSGNJX.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let rs1_bits = cpu.f[f.rs1].to_bits();
+        let rs2_bits = cpu.f[f.rs2].to_bits();
+        let sign_bit = (rs1_bits ^ rs2_bits) & 0x8000000000000000;
+
+        cpu.f[f.rd] = f64::from_bits(sign_bit | (rs1_bits & 0x7fffffffffffffff));
+        Ok(())
+    }
+};
+
+pub const FMIN_D: Instruction = Instruction {
+    name: "FMIN.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v1 = cpu.f[f.rs1];
+        let v2 = cpu.f[f.rs2];
+
+        let mut result = match (v1.is_sign_positive(), v2.is_sign_positive()) {
+            (true, true) => match v1 < v2 {
+                true => v1,
+                false => v2
+            },
+            (true, false) => v2,
+            (false, true) => v1,
+            (false, false) => match v1 < v2 {
+                true => v1,
+                false => v2
+            }
+        };
+
+        if v1.is_nan() || v2.is_nan() {
+            if v1.is_nan() && v2.is_nan() {
+                if v1.to_bits() == SIGNALING_NAN || v2.to_bits() == SIGNALING_NAN {
+                    cpu.set_fcsr_nv();
+                }
+                result = f64::from_bits(CANONICAL_NAN);
+            } else if v1.is_nan() {
+                result = v2;
+            } else {
+                result = v1;
+            }
+        }
+
+        cpu.f[f.rd] = result;
+        Ok(())
+    }
+};
+
+
+pub const FMAX_D: Instruction = Instruction {
+    name: "FMAX.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v1 = cpu.f[f.rs1];
+        let v2 = cpu.f[f.rs2];
+
+        let mut result = match (v1.is_sign_positive(), v2.is_sign_positive()) {
+            (true, true) => match v1 > v2 {
+                true => v1,
+                false => v2
+            },
+            (true, false) => v1,
+            (false, true) => v2,
+            (false, false) => match v1 > v2 {
+                true => v1,
+                false => v2
+            }
+        };
+
+        if v1.is_nan() || v2.is_nan() {
+            if v1.is_nan() && v2.is_nan() {
+                if v1.to_bits() == SIGNALING_NAN || v2.to_bits() == SIGNALING_NAN {
+                    cpu.set_fcsr_nv();
+                }
+                result = f64::from_bits(CANONICAL_NAN);
+            } else if v1.is_nan() {
+                result = v2;
+            } else {
+                result = v1;
+            }
+        }
+
+        cpu.f[f.rd] = result;
+        Ok(())
+    }
+};
+
+pub const FCVT_WU_D: Instruction = Instruction {
+    name: "FCVT.WU.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        let v = cpu.f[f.rs1];
+
+        if v.is_nan() || v <= -1.0 {
+            cpu.set_fcsr_nv();
+
+            if v.is_nan() {
+                cpu.x[f.rd] = -1;
+            } else {
+                cpu.x[f.rd] = 0;
+            }
+        } else {
+            let u = v as u32;
+
+            // apparently we need to sign extend the value
+            let upper: u64 = match u & 0x80000000 {
+                0 => 0,
+                _ => 0xffffffff00000000
+            };
+
+            cpu.x[f.rd] = (u as u64 | upper) as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            }
+        }
+        Ok(())
+    }
+};
+
+pub const FCVT_L_D: Instruction = Instruction {
+    name: "FCVT.L.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rs1] = cpu.f[f.rd] as i64;
+        Ok(())
+    }
+};
+
+pub const FCVT_LU_D: Instruction = Instruction {
+    name: "FCVT.L.D",
+    operation: |cpu, word, _address| {
+        let f = instruction::parse_format_r(word);
+        cpu.x[f.rs1] = cpu.f[f.rd] as u64 as i64;
         Ok(())
     }
 };
