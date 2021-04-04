@@ -690,5 +690,10 @@ mod test {
         fn rv64ud_p_fdiv() {
             rv_test!("../test/rv64ud-p-fdiv");
         }
+
+        #[test]
+        fn rv64ud_p_fmadd() {
+            rv_test!("../test/rv64ud-p-fmadd");
+        }
     }
 }
