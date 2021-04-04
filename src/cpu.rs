@@ -1102,6 +1102,8 @@ impl Cpu {
         };
 
         let flags = self.csr[CSR_FCSR_ADDRESS as usize] & !0x1f;
+
+        // println!("read_fflags: {:#x} nx={:?}", flags, inexact);
         flags | inexact | underflow | overflow | div_by_zero | invalid_op
     }
 
@@ -1114,6 +1116,8 @@ impl Cpu {
     fn write_fflags(&mut self, value: u64) {
         use core::arch::x86_64::*;
         let mut flags = unsafe { _mm_getcsr() } & !_MM_EXCEPT_MASK;
+
+        // println!("write_fflags value = {:#x}", value);
 
         if value & 1 == 1 {
             flags = flags | _MM_EXCEPT_INEXACT;
