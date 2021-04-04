@@ -68,10 +68,10 @@ pub const FLW: Instruction = Instruction {
     name: "FLW",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_i(word);
-        unsafe {
-            // this seems a bit odd to me
-            cpu.f[f.rd] = f64::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const i32) as i64 as u64);
-        }
+        let value = unsafe {
+            f32::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u32))
+        };
+        cpu.set_f32(f.rd, value);
         Ok(())
     }
 };
