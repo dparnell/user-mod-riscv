@@ -81,7 +81,7 @@ pub const FCVT_W_D: Instruction = Instruction {
 
         if v.is_nan() {
             cpu.set_fcsr_nv();
-            cpu.x[f.rd] = 0x7fffffffffffffff;
+            cpu.x[f.rd] = 0x7fffffff;
         } else {
             cpu.x[f.rd] = v as i32 as i64;
             if v.fract() != 0.0 {
@@ -427,7 +427,7 @@ pub const FCVT_L_D: Instruction = Instruction {
     name: "FCVT.L.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        let v = cpu.get_f32(f.rs1);
+        let v = cpu.f[f.rs1];
 
         if v.is_nan() {
             cpu.set_fcsr_nv();
@@ -446,7 +446,30 @@ pub const FCVT_LU_D: Instruction = Instruction {
     name: "FCVT.LU.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        cpu.x[f.rs1] = cpu.f[f.rd] as u64 as i64;
+        let v = cpu.f[f.rs1];
+
+        if v.is_nan() || v <= -1.0 {
+            cpu.set_fcsr_nv();
+            if v.is_nan() {
+                cpu.x[f.rd] = -1;
+            } else {
+                cpu.x[f.rd] = 0;
+            }
+        } else {
+            let flags = cpu.read_fflags();
+            // it seems the conversion of float values to u64 is setting the NX flag on Intel for
+            // things like 1.0 when on RiscV it does not, so we can not rely on the native flag in this case
+            cpu.x[f.rd] = v as u64 as i64;
+            if v.fract() != 0.0 {
+                cpu.set_fcsr_nx();
+            } else {
+                let new_flags = cpu.read_fflags();
+
+                if new_flags & 1 == 1 && flags & 1 == 0 {
+                    cpu.write_fflags(flags);
+                }
+            }
+        }
         Ok(())
     }
 };
