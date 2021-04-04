@@ -486,6 +486,13 @@ impl Cpu {
                     },
                     _ => None
                 },
+
+                0b0010101 => match (word >> 12) & 3 {
+                    0b000 => Some(&FMIN_D),
+                    0b001 => Some(&FMAX_D),
+                    _ => None
+                },
+
                 _ => None
             },
 
@@ -495,11 +502,6 @@ impl Cpu {
                 _ => None
             },
 
-            0b0010101 => match (word >> 25) & 3 {
-                0b00 => Some(&FMIN_D),
-                0b01 => Some(&FMAX_D),
-                _ => None
-            },
 
             0b1000111 => match (word >> 25) & 3 {
                 0b00 => Some(&FMSUB_S),
