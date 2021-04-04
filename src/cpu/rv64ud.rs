@@ -36,8 +36,12 @@ pub const FCVT_D_S: Instruction = Instruction {
     name: "FCVT.D.S",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        // Is this implementation correct?
-        cpu.f[f.rd] = f32::from_bits(cpu.f[f.rs1].to_bits() as u32) as f64;
+        let v = cpu.get_f32(f.rs1);
+        if v.is_nan() {
+            cpu.f[f.rd] = f64::from_bits(CANONICAL_NAN);
+        } else {
+            cpu.f[f.rd] = v as f64;
+        }
         Ok(())
     }
 };
@@ -64,8 +68,7 @@ pub const FCVT_S_D: Instruction = Instruction {
     name: "FCVT.S.D",
     operation: |cpu, word, _address| {
         let f = instruction::parse_format_r(word);
-        // Is this implementation correct?
-        cpu.f[f.rd] = cpu.f[f.rs1] as f32 as f64;
+        cpu.set_f32(f.rd,cpu.f[f.rs1] as f32);
         Ok(())
     }
 };

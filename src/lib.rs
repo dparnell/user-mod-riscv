@@ -675,5 +675,10 @@ mod test {
         fn rv64ud_p_fcmp() {
             rv_test!("../test/rv64ud-p-fcmp");
         }
+
+        #[test]
+        fn rv64ud_p_fcvt() {
+            rv_test!("../test/rv64ud-p-fcvt");
+        }
     }
 }
