@@ -670,5 +670,10 @@ mod test {
         fn rv64ud_p_fadd() {
             rv_test!("../test/rv64ud-p-fadd");
         }
+
+        #[test]
+        fn rv64ud_p_fcmp() {
+            rv_test!("../test/rv64ud-p-fcmp");
+        }
     }
 }
