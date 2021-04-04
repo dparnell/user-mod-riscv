@@ -705,5 +705,11 @@ mod test {
         fn rv64ud_p_ldst() {
             rv_test!("../test/rv64ud-p-ldst");
         }
+
+        #[test]
+        #[ignore]
+        fn rv64ud_p_move() {
+            rv_test!("../test/rv64ud-p-move");
+        }
     }
 }
