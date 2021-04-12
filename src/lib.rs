@@ -94,7 +94,12 @@ mod test {
             cpu.set_ecall_handler(Some(Instruction{
                 name: "ECALL",
                 operation: |cpu, _word, _address| {
-                    Err(Trap { trap_type: TrapType::Stop, value: cpu.x[10] as u64 })
+                    // is it a Linux exit SYSCALL?
+                    if cpu.get_register(Register::A7) == 93 {
+                        Err(Trap { trap_type: TrapType::Stop, value: cpu.get_register(Register::A0) as u64 })
+                    } else {
+                        Err(Trap { trap_type: TrapType::SupervisorSoftwareInterrupt, value: 0})
+                    }
                 }
             }));
 
@@ -156,7 +161,7 @@ mod test {
                         match e.trap_type {
                             TrapType::Stop => {
                                 if e.value != 0 {
-                                    panic!("CPU test {:?} failed a0={:#x} a1={:#x} a2={:#x} a3={:#x} a4={:#x} t2={:#x}", e.value >> 1, cpu.x[10], cpu.x[11], cpu.x[12], cpu.x[13],cpu.x[14], cpu.x[6]);
+                                    panic!("CPU test {:?} failed a0={:#x} a1={:#x} a2={:#x} a3={:#x} a4={:#x} t2={:#x}", e.value >> 1, cpu.get_register(Register::A0), cpu.get_register(Register::A1), cpu.get_register(Register::A2), cpu.get_register(Register::A3), cpu.get_register(Register::A4), cpu.get_register(Register::T2));
                                 } else {
                                     break;
                                 }

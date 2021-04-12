@@ -118,6 +118,41 @@ x28-31	    t3-6	    temporary registers	Caller
 
  */
 
+pub enum Register {
+    ZERO = 0,
+    RA = 1,
+    SP = 2,
+    GP = 3,
+    TP = 4,
+    T0 = 5,
+    T1 = 6,
+    T2 = 7,
+    FP = 8,
+    S1 = 9,
+    A0 = 10,
+    A1 = 11,
+    A2 = 12,
+    A3 = 13,
+    A4 = 14,
+    A5 = 15,
+    A6 = 16,
+    A7 = 17,
+    S2 = 18,
+    S3 = 19,
+    S4 = 20,
+    S5 = 21,
+    S6 = 22,
+    S7 = 23,
+    S8 = 24,
+    S9 = 25,
+    S10 = 26,
+    S11 = 27,
+    T3 = 28,
+    T4 = 29,
+    T5 = 30,
+    T6 = 31
+}
+
 pub struct Cpu {
     pub pc: *mut u8,
     pub x: [i64; 32],
@@ -126,6 +161,7 @@ pub struct Cpu {
     pub csr: [u64; CSR_CAPACITY],
     reservation: u64, // @TODO: Should support multiple address reservations
     is_reservation_set: bool,
+    stack: Option<Vec<u8>>,
     ecall_handler: Option<Instruction>
 }
 
@@ -150,6 +186,7 @@ impl Cpu {
             csr: [0; CSR_CAPACITY],
             reservation: 0,
             is_reservation_set: false,
+            stack: None,
             ecall_handler: None
         }
     }
@@ -184,6 +221,24 @@ impl Cpu {
         self.pc as usize
     }
 
+    pub fn get_register(&self, register: Register) -> i64 {
+        self.x[register as usize]
+    }
+
+    pub fn set_register(&mut self, register: Register, value: i64) {
+        self.x[register as usize] = value;
+    }
+
+    pub fn set_stack(&mut self, stack: Vec<u8>) {
+        let sp = stack.as_ptr() as i64;
+        self.stack = Some(stack);
+        self.x[Register::SP as usize] = sp;
+    }
+
+    pub fn remove_stack(&mut self) {
+        self.stack = None;
+        self.x[Register::SP as usize] = 0;
+    }
     pub fn tick(&mut self) -> Result<(), Trap> {
         let instruction_address = self.pc;
         self.csr[CSR_TIME_ADDRESS as usize] = self.csr[CSR_TIME_ADDRESS as usize].wrapping_add(1);
