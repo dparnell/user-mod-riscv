@@ -230,9 +230,11 @@ impl Cpu {
     }
 
     pub fn set_stack(&mut self, stack: Vec<u8>) {
+        let len = stack.len();
         let sp = stack.as_ptr() as i64;
         self.stack = Some(stack);
-        self.x[Register::SP as usize] = sp;
+        // the stack moves grows in a downwards direction apparently
+        self.x[Register::SP as usize] = sp + len as i64;
     }
 
     pub fn remove_stack(&mut self) {
