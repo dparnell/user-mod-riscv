@@ -9,16 +9,17 @@ mod test {
 
     use elfloader::*;
 
-    const IMG_BASE: u64 = 0x80000000;
     const MAX_SIZE: usize = 1024 * 32;
     struct RVTestElfLoader {
         target: [u8; MAX_SIZE],
+        pub img_base: u64
     }
 
     impl RVTestElfLoader {
         pub fn new() -> Self {
             RVTestElfLoader {
-                target: [0; MAX_SIZE]
+                target: [0; MAX_SIZE],
+                img_base: u64::MAX
             }
         }
 
@@ -30,17 +31,13 @@ mod test {
     }
 
     impl ElfLoader for RVTestElfLoader {
-        fn allocate(&mut self, _load_headers: LoadableHeaders) -> Result<(), &'static str> {
-            /*
+        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), &'static str> {
             for header in load_headers {
-                println!(
-                    "allocate base = {:#x} size = {:#x} flags = {}",
-                    header.virtual_addr(),
-                    header.mem_size(),
-                    header.flags()
-                );
+                if header.virtual_addr() < self.img_base {
+                    self.img_base = header.virtual_addr();
+                }
             }
-            */
+
             Ok(())
         }
 
@@ -53,10 +50,11 @@ mod test {
         }
 
         fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), &'static str> {
-            let start = base - IMG_BASE;
+            let start = base - self.img_base;
             let end = start + region.len() as u64;
+
+            //println!("Loading region from {:#x} into {:?} with {:?} bytes", base, start, region.len());
             if end < MAX_SIZE as u64 {
-                // println!("Loading region from {:#x} into {:?} with {:?} bytes", base, start, region.len());
                 for i in 0..region.len() {
                     self.target[start as usize + i] = region[i];
                 }
@@ -83,95 +81,104 @@ mod test {
 
     }
 
-    macro_rules! rv_test {
-        ( $bytes:literal ) => {
-            let binary_blob = include_bytes!($bytes);
-            let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
-            let mut loader = RVTestElfLoader::new();
-            binary.load(&mut loader).expect("Can't load the binary?");
+    fn run_test(binary_blob: &[u8]) {
+        let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
+        let mut loader = RVTestElfLoader::new();
+        binary.load(&mut loader).expect("Can't load the binary?");
+        let img_base = loader.img_base;
 
-            let mut cpu = Cpu::new();
-            cpu.set_ecall_handler(Some(Instruction{
-                name: "ECALL",
-                operation: |cpu, _word, _address| {
-                    // is it a Linux exit SYSCALL?
-                    if cpu.get_register(Register::A7) == 93 {
-                        Err(Trap { trap_type: TrapType::Stop, value: cpu.get_register(Register::A0) as u64 })
-                    } else {
-                        Err(Trap { trap_type: TrapType::SupervisorSoftwareInterrupt, value: 0})
-                    }
+        let entry_point_offset = binary.entry_point() - img_base;
+
+        let mut cpu = Cpu::new();
+        cpu.set_ecall_handler(Some(Instruction{
+            name: "ECALL",
+            operation: |cpu, _word, _address| {
+                match cpu.get_register(Register::A7) {
+                    64 => Ok(()), // WRITE
+                    93 => Err(Trap { trap_type: TrapType::Stop, value: cpu.get_register(Register::A0) as u64 }),
+                    num => Err(Trap { trap_type: TrapType::SupervisorSoftwareInterrupt, value: num as u64})
                 }
-            }));
+            }
+        }));
 
-            cpu.update_pc(loader.get_target());
-            let base_pc = cpu.get_pc();
-            let mut fuel = 1_000_000;
+        let img = loader.get_target();
+        let base_pc = img as usize;
+        let entry_point = (base_pc as u64 + entry_point_offset) as *mut u32;
+        cpu.update_pc(entry_point);
 
-            let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
-            let mut old_x = cpu.x.clone();
-            let mut old_f = cpu.f.clone();
+        let mut fuel = 1_000_000;
 
-            loop {
-                let pc = cpu.get_pc() - base_pc + IMG_BASE as usize;
+        let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
+        let mut old_x = cpu.x.clone();
+        let mut old_f = cpu.f.clone();
 
-                if dump_instructions {
-                    let saved = cpu.pc;
-                    let op = cpu.fetch();
-                    let inst = Cpu::decode(op);
-                    cpu.pc = saved;
+        loop {
+            let pc = cpu.get_pc() - base_pc + img_base as usize;
 
-                    if let Some(inst) = inst {
-                        print!("pc = {:#x} - {:?}, Cpu - x: [", pc, inst.name);
-                        for i in 0..32 {
-                            if i > 0 {
-                                print!(", ");
-                            }
-                            if cpu.x[i] == old_x[i] {
-                                print!("{:?}", cpu.x[i]);
-                            } else {
-                                print!("\x1b[31m{:?}\x1b[0m", cpu.x[i]);
-                            }
+            if dump_instructions {
+                let saved = cpu.pc;
+                let op = cpu.fetch();
+                let inst = Cpu::decode(op);
+                cpu.pc = saved;
+
+                if let Some(inst) = inst {
+                    print!("pc = {:#x} - {:?}, Cpu - x: [", pc, inst.name);
+                    for i in 0..32 {
+                        if i > 0 {
+                            print!(", ");
                         }
-                        print!("], f: [");
-                        for i in 0..32 {
-                            if i > 0 {
-                                print!(", ");
-                            }
-                            if cpu.f[i].to_bits() == old_f[i].to_bits() {
-                                print!("{:?}", cpu.f[i]);
-                            } else {
-                                print!("\x1b[31m{:?}\x1b[0m", cpu.f[i]);
-                            }
+                        if cpu.x[i] == old_x[i] {
+                            print!("{:?}", cpu.x[i]);
+                        } else {
+                            print!("\x1b[31m{:?}\x1b[0m", cpu.x[i]);
                         }
-                        println!("]");
                     }
-
-                    old_x = cpu.x.clone();
-                    old_f = cpu.f.clone();
+                    print!("], f: [");
+                    for i in 0..32 {
+                        if i > 0 {
+                            print!(", ");
+                        }
+                        if cpu.f[i].to_bits() == old_f[i].to_bits() {
+                            print!("{:?}", cpu.f[i]);
+                        } else {
+                            print!("\x1b[31m{:?}\x1b[0m", cpu.f[i]);
+                        }
+                    }
+                    println!("]");
                 }
 
-                match cpu.tick() {
-                    Ok(_) => {
-                        fuel = fuel - 1;
-                        if fuel == 0 {
-                            panic!("out of fuel");
-                        }
-                    },
-                    Err(e) => {
-                        match e.trap_type {
-                            TrapType::Stop => {
-                                if e.value != 0 {
-                                    panic!("CPU test {:?} failed a0={:#x} a1={:#x} a2={:#x} a3={:#x} a4={:#x} t2={:#x}", e.value >> 1, cpu.get_register(Register::A0), cpu.get_register(Register::A1), cpu.get_register(Register::A2), cpu.get_register(Register::A3), cpu.get_register(Register::A4), cpu.get_register(Register::T2));
-                                } else {
-                                    break;
-                                }
-                            },
-                            _ => panic!("CPU failure: pc = {:#x} - {:?}", pc, e)
-                        }
+                old_x = cpu.x.clone();
+                old_f = cpu.f.clone();
+            }
+
+            match cpu.tick() {
+                Ok(_) => {
+                    fuel = fuel - 1;
+                    if fuel == 0 {
+                        panic!("out of fuel");
+                    }
+                },
+                Err(e) => {
+                    match e.trap_type {
+                        TrapType::Stop => {
+                            if e.value != 0 {
+                                panic!("CPU test {:?} failed a0={:#x} a1={:#x} a2={:#x} a3={:#x} a4={:#x} t2={:#x}", e.value >> 1, cpu.get_register(Register::A0), cpu.get_register(Register::A1), cpu.get_register(Register::A2), cpu.get_register(Register::A3), cpu.get_register(Register::A4), cpu.get_register(Register::T2));
+                            } else {
+                                break;
+                            }
+                        },
+                        _ => panic!("CPU failure: pc = {:#x} - {:?}", pc, e)
                     }
                 }
             }
+        }
+    }
 
+    macro_rules! rv_test {
+        ( $bytes:literal ) => {
+            let binary_blob = include_bytes!($bytes);
+
+            run_test(binary_blob);
         }
     }
 
@@ -725,6 +732,16 @@ mod test {
         #[test]
         fn rv64ud_p_structural() {
             rv_test!("../test/rv64ud-p-structural");
+        }
+    }
+
+    mod examples {
+        use super::*;
+
+        #[test]
+        #[ignore]
+        fn mandelbrot() {
+            rv_test!("../test/mandelbrot");
         }
     }
 }
