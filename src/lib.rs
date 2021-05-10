@@ -8,6 +8,7 @@ mod test {
     use super::cpu::instruction::Instruction;
 
     use elfloader::*;
+    use std::io::Write;
 
     const MAX_SIZE: usize = 1024 * 32;
     struct RVTestElfLoader {
@@ -105,7 +106,9 @@ mod test {
         let base_pc = img as usize;
         let entry_point = (base_pc as u64 + entry_point_offset) as *mut u32;
         cpu.update_pc(entry_point);
-
+        let mut stack = Vec::with_capacity(1024*1024);
+        stack.resize(1024*1024, 0);
+        cpu.set_stack(stack);
         let mut fuel = 1_000_000;
 
         let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
@@ -149,6 +152,7 @@ mod test {
 
                 old_x = cpu.x.clone();
                 old_f = cpu.f.clone();
+                std::io::stdout().flush().expect("flush");
             }
 
             match cpu.tick() {
@@ -739,7 +743,6 @@ mod test {
         use super::*;
 
         #[test]
-        #[ignore]
         fn mandelbrot() {
             rv_test!("../test/mandelbrot");
         }
