@@ -10,7 +10,7 @@ mod test {
     use elfloader::*;
     use std::io::Write;
 
-    const MAX_SIZE: usize = 1024 * 32;
+    const MAX_SIZE: usize = 1024 * 128;
     struct RVTestElfLoader {
         target: [u8; MAX_SIZE],
         pub img_base: u64
@@ -109,7 +109,7 @@ mod test {
         let mut stack = Vec::with_capacity(1024*1024);
         stack.resize(1024*1024, 0);
         cpu.set_stack(stack);
-        let mut fuel = 1_000_000;
+        let mut fuel = 1_000_000_000;
 
         let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
         let mut old_x = cpu.x.clone();
@@ -745,6 +745,11 @@ mod test {
         #[test]
         fn mandelbrot() {
             rv_test!("../test/mandelbrot");
+        }
+
+        #[test]
+        fn mandelbrot_debug() {
+            rv_test!("../test/mandelbrot-debug");
         }
     }
 }

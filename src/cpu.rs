@@ -320,6 +320,7 @@ impl Cpu {
                 },
                 0b101 => match word >> 25 {
                     0b0000000 => Some(&SRLI),
+                    0b0000001 => Some(&SRLI),
                     0b0100000 => Some(&SRAI),
                     _ => None
                 },
@@ -642,9 +643,11 @@ impl Cpu {
         }
     }
 
-    fn uncompress(halfword: u32) -> u32 {
+    pub fn uncompress(halfword: u32) -> u32 {
         let op = halfword & 0x3; // [1:0]
         let funct3 = (halfword >> 13) & 0x7; // [15:13]
+
+        // println!("op = {:?} funct3 = {:?}", op, funct3);
 
         match op {
             0 => match funct3 {
@@ -992,9 +995,9 @@ impl Cpu {
                         let shamt =
                             ((halfword >> 7) & 0x20) | // imm[5] <= [12]
                                 ((halfword >> 2) & 0x1f); // imm[4:0] <= [6:2]
-                        if r != 0 {
+                        //if r != 0 {
                             return (shamt << 20) | (r << 15) | (1 << 12) | (r << 7) | 0x13;
-                        }
+                        //}
                         // r == 0 is reserved instruction?
                     },
                     1 => {
@@ -1005,9 +1008,9 @@ impl Cpu {
                             ((halfword >> 7) & 0x20) | // offset[5] <= [12]
                                 ((halfword >> 2) & 0x18) | // offset[4:3] <= [6:5]
                                 ((halfword << 4) & 0x1c0); // offset[8:6] <= [4:2]
-                        if rd != 0 {
-                            return (offset << 20) | (2 << 15) | (3 << 12) | (rd << 7) | 0x7;
-                        }
+                        //if rd != 0 {
+                        return (offset << 20) | (2 << 15) | (3 << 12) | (rd << 7) | 0x7;
+                        //}
                         // rd == 0 is reseved instruction
                     },
                     2 => {
@@ -1018,9 +1021,9 @@ impl Cpu {
                             ((halfword >> 7) & 0x20) | // offset[5] <= [12]
                                 ((halfword >> 2) & 0x1c) | // offset[4:2] <= [6:4]
                                 ((halfword << 4) & 0xc0); // offset[7:6] <= [3:2]
-                        if r != 0 {
+                        //if r != 0 {
                             return (offset << 20) | (2 << 15) | (2 << 12) | (r << 7) | 0x3;
-                        }
+                        //}
                         // r == 0 is reseved instruction
                     },
                     3 => {
@@ -1032,9 +1035,9 @@ impl Cpu {
                             ((halfword >> 7) & 0x20) | // offset[5] <= [12]
                                 ((halfword >> 2) & 0x18) | // offset[4:3] <= [6:5]
                                 ((halfword << 4) & 0x1c0); // offset[8:6] <= [4:2]
-                        if rd != 0 {
+                        //if rd != 0 {
                             return (offset << 20) | (2 << 15) | (3 << 12) | (rd << 7) | 0x3;
-                        }
+                        //}
                         // rd == 0 is reseved instruction
                     },
                     4 => {
@@ -1333,5 +1336,18 @@ mod test_cpu {
         assert_eq!(cpu.x[10], 2);
         let pc2 = cpu.get_pc();
         assert_eq!(4, pc2 - pc1);
+    }
+
+    #[test]
+    fn decode_fld_compressed_instruction() {
+        let opcode = Cpu::uncompress(0x3022);
+        println!("opcode = {:?}", opcode);
+
+        match Cpu::decode(opcode) {
+            Some(instruction) => assert_eq!(instruction.name, "FLD"),
+            _ => panic!("invalid instruction")
+        }
+
+
     }
 }
