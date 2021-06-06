@@ -357,6 +357,7 @@ impl Cpu {
                     0b0000000 => Some(&SRLI),
                     0b0000001 => Some(&SRLI),
                     0b0100000 => Some(&SRAI),
+                    0b0100001 => Some(&SRAI),
                     _ => None
                 },
                 _ => None
@@ -1376,13 +1377,22 @@ mod test_cpu {
     #[test]
     fn decode_fld_compressed_instruction() {
         let opcode = Cpu::uncompress(0x3022);
-        println!("opcode = {:?}", opcode);
+        // println!("opcode = {:?}", opcode);
 
         match Cpu::decode(opcode) {
             Some(instruction) => assert_eq!(instruction.name, "FLD"),
             _ => panic!("invalid instruction")
         }
+    }
 
+    #[test]
+    fn decode_srai_compressed_instruction() {
+        let opcode = Cpu::uncompress(0x9561);
+        //println!("opcode = {:#x?}", opcode);
 
+        match Cpu::decode(opcode) {
+            Some(instruction) => assert_eq!(instruction.name, "SRAI"),
+            _ => panic!("invalid instruction")
+        }
     }
 }
