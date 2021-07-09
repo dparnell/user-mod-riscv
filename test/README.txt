@@ -1,4 +1,4 @@
-Most of the tests here are take from https://github.com/riscv/riscv-tests
+Most of the tests here are taken from https://github.com/riscv/riscv-tests
 
 Copyright (c) 2012-2015, The Regents of the University of California (Regents).
 All Rights Reserved.
