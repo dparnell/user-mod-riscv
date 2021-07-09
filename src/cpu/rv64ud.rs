@@ -83,9 +83,13 @@ pub const FCVT_W_D: Instruction = Instruction {
             cpu.set_fcsr_nv();
             cpu.x[f.rd] = 0x7fffffff;
         } else {
+            // println!("********** v={} i={}", v, v as i32 as i64);
             cpu.x[f.rd] = v as i32 as i64;
             if v.fract() != 0.0 {
                 cpu.set_fcsr_nx();
+            }
+            if v > i32::MAX as f64 || v < i32::MIN as f64 {
+                cpu.set_fcsr_nv();
             }
         }
         Ok(())
