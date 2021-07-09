@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Daniel Parnell <me@danielparnell.com>"]
 edition = "2018"
 
+readme = "README.md"
+repository = "https://github.com/dparnell/user-mode-riscv"
+homepage = "https://github.com/dparnell/user-mode-riscv"
+license-file = "LICENSE.txt"
+keywords = ["riscv", "risc-v", "emulation"]
+categories = ["graphics", "multimedia", "rendering"]
+description = "RISCV CPU emulation focusing on user mode instructions only"
+
 [dependencies]
 
 [dev-dependencies]
