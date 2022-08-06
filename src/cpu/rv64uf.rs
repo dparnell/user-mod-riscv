@@ -66,11 +66,9 @@ pub const FSQRT_S: Instruction = Instruction {
 
 pub const FLW: Instruction = Instruction {
     name: "FLW",
-    operation: |cpu, _memory, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_i(word);
-        let value = unsafe {
-            f32::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u32))
-        };
+        let value = f32::from_bits(memory.read_u32(cpu.x[f.rs1].wrapping_add(f.imm) as usize)?);
         cpu.set_f32(f.rd, value);
         Ok(())
     }
@@ -114,12 +112,9 @@ pub const FMV_W_X: Instruction = Instruction {
 
 pub const FSW: Instruction = Instruction {
     name: "FSW",
-    operation: |cpu, _memory, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_s(word);
-        unsafe {
-            *(cpu.x[f.rs1].wrapping_add(f.imm) as *mut u32) = cpu.f[f.rs2].to_bits() as u32;
-        }
-        Ok(())
+        memory.write_u32(cpu.x[f.rs1].wrapping_add(f.imm) as usize, cpu.f[f.rs2].to_bits() as u32)
     }
 };
 

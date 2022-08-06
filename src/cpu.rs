@@ -1336,11 +1336,14 @@ mod test_cpu {
     #[test]
     fn babys_first_instruction() {
         let mut cpu = Cpu::new();
-        let mut instruction: Vec<u8> = vec![0x05, 0x05, 0x00, 0x00]; // addi a0,a0,1
+        let mut instruction: Vec<u8> = vec![
+            0x05, 0x05, // addi a0,a0,1
+            0x00, 0x00
+        ];
         cpu.update_pc(0);
         let pc1 = cpu.get_pc();
         assert_eq!(cpu.x[10], 0);
-        cpu.tick(&mut instruction).ok().expect("cpu failure");
+        cpu.tick(&mut instruction).expect("cpu failure");
         assert_eq!(cpu.x[10], 1);
         let pc2 = cpu.get_pc();
         assert_eq!(2, pc2 - pc1);
@@ -1349,13 +1352,18 @@ mod test_cpu {
     #[test]
     fn two_compressed_instruction() {
         let mut cpu = Cpu::new();
-        let mut instruction: Vec<u8> = vec![0x05, 0x05, 0x05, 0x05];
+        let mut memory: Vec<u8> = vec![
+            0x05, 0x05, // addi a0,a0,1
+            0x05, 0x05, // addi a0,a0,1
+            0x00, 0x00,
+            0x00, 0x00
+        ];
         cpu.update_pc(0);
         let pc1 = cpu.get_pc();
         assert_eq!(cpu.x[10], 0);
-        cpu.tick(&mut instruction).ok().expect("cpu failure");
+        cpu.tick(&mut memory).expect("cpu failure");
         assert_eq!(cpu.x[10], 1);
-        cpu.tick(&mut instruction).ok().expect("cpu failure");
+        cpu.tick(&mut memory).expect("cpu failure");
         assert_eq!(cpu.x[10], 2);
         let pc2 = cpu.get_pc();
         assert_eq!(4, pc2 - pc1);

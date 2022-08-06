@@ -233,22 +233,17 @@ pub const FNMSUB_D: Instruction = Instruction {
 
 pub const FSD: Instruction = Instruction {
     name: "FSD",
-    operation: |cpu, _memory, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_s(word);
-        unsafe {
-            *(cpu.x[f.rs1].wrapping_add(f.imm) as *mut u64) = cpu.f[f.rs2].to_bits();
-        }
-        Ok(())
+        memory.write_u64(cpu.x[f.rs1].wrapping_add(f.imm) as usize, cpu.f[f.rs2].to_bits())
     }
 };
 
 pub const FLD: Instruction = Instruction {
     name: "FLD",
-    operation: |cpu, _memory, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_i(word);
-        unsafe {
-            cpu.f[f.rd] = f64::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u64));
-        }
+        cpu.f[f.rd] = f64::from_bits(memory.read_u64(cpu.x[f.rs1].wrapping_add(f.imm) as usize)?);
         Ok(())
     }
 };
