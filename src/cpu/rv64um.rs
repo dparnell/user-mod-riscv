@@ -3,7 +3,7 @@ use crate::cpu::instruction::Instruction;
 
 pub const DIV: Instruction = Instruction {
     name: "DIV",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.x[f.rs1];
         let divisor = cpu.x[f.rs2];
@@ -20,7 +20,7 @@ pub const DIV: Instruction = Instruction {
 
 pub const DIVU: Instruction = Instruction {
     name: "DIVU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.unsigned_data(cpu.x[f.rs1]);
         let divisor = cpu.unsigned_data(cpu.x[f.rs2]);
@@ -35,7 +35,7 @@ pub const DIVU: Instruction = Instruction {
 
 pub const DIVUW: Instruction = Instruction {
     name: "DIVUW",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.unsigned_data(cpu.x[f.rs1]) as u32;
         let divisor = cpu.unsigned_data(cpu.x[f.rs2]) as u32;
@@ -50,7 +50,7 @@ pub const DIVUW: Instruction = Instruction {
 
 pub const DIVW: Instruction = Instruction {
     name: "DIVW",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.x[f.rs1] as i32;
         let divisor = cpu.x[f.rs2] as i32;
@@ -67,7 +67,7 @@ pub const DIVW: Instruction = Instruction {
 
 pub const MUL: Instruction = Instruction {
     name: "MUL",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = cpu.sign_extend(cpu.x[f.rs1].wrapping_mul(cpu.x[f.rs2]));
         Ok(())
@@ -76,7 +76,7 @@ pub const MUL: Instruction = Instruction {
 
 pub const MULH: Instruction = Instruction {
     name: "MULH",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = match cpu.xlen {
             Xlen::Bit32 => {
@@ -92,7 +92,7 @@ pub const MULH: Instruction = Instruction {
 
 pub const MULHU: Instruction = Instruction {
     name: "MULHU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = match cpu.xlen {
             Xlen::Bit32 => {
@@ -108,7 +108,7 @@ pub const MULHU: Instruction = Instruction {
 
 pub const MULHSU: Instruction = Instruction {
     name: "MULHSU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = match cpu.xlen {
             Xlen::Bit32 => {
@@ -124,7 +124,7 @@ pub const MULHSU: Instruction = Instruction {
 
 pub const MULW: Instruction = Instruction {
     name: "MULW",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = cpu.sign_extend((cpu.x[f.rs1] as i32).wrapping_mul(cpu.x[f.rs2] as i32) as i64);
         Ok(())
@@ -133,7 +133,7 @@ pub const MULW: Instruction = Instruction {
 
 pub const REM: Instruction = Instruction {
     name: "REM",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.x[f.rs1];
         let divisor = cpu.x[f.rs2];
@@ -150,7 +150,7 @@ pub const REM: Instruction = Instruction {
 
 pub const REMU: Instruction = Instruction {
     name: "REMU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.unsigned_data(cpu.x[f.rs1]);
         let divisor = cpu.unsigned_data(cpu.x[f.rs2]);
@@ -164,7 +164,7 @@ pub const REMU: Instruction = Instruction {
 
 pub const REMUW: Instruction = Instruction {
     name: "REMUW",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.x[f.rs1] as u32;
         let divisor = cpu.x[f.rs2] as u32;
@@ -178,7 +178,7 @@ pub const REMUW: Instruction = Instruction {
 
 pub const REMW: Instruction = Instruction {
     name: "REMW",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.x[f.rs1] as i32;
         let divisor = cpu.x[f.rs2] as i32;

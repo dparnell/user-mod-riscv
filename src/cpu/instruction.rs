@@ -1,10 +1,10 @@
-use crate::cpu::{Cpu, Trap};
+use crate::cpu::{Cpu, Memory, Trap};
 use std::fmt::{Debug, Formatter};
 use std::fmt;
 
 pub struct Instruction {
     pub name: &'static str,
-    pub operation: fn(cpu: &mut Cpu, word: u32, address: *const u8) -> Result<(), Trap>
+    pub operation: fn(cpu: &mut Cpu, memory: &mut dyn Memory, word: u32, address: usize) -> Result<(), Trap>
 }
 
 impl Debug for Instruction {

@@ -1,5 +1,3 @@
-use std::ptr::null_mut;
-
 use instruction::Instruction;
 use rv64ua::*;
 use rv64ud::*;
@@ -8,6 +6,7 @@ use rv64ui::*;
 use rv64um::*;
 use std::fmt::{Debug, Formatter};
 use std::fmt;
+use crate::memory::Memory;
 
 pub mod instruction;
 mod rv64ui;
@@ -189,14 +188,13 @@ pub enum FpRegister {
 }
 
 pub struct Cpu {
-    pub pc: *mut u8,
+    pub pc: usize,
     pub x: [i64; 32],
     pub f: [f64; 32],
     xlen: Xlen,
     pub csr: [u64; CSR_CAPACITY],
     reservation: u64, // @TODO: Should support multiple address reservations
     is_reservation_set: bool,
-    stack: Option<Vec<u8>>,
     ecall_handler: Option<Instruction>
 }
 
@@ -214,38 +212,35 @@ impl Debug for Cpu {
 impl Cpu {
     pub fn new() -> Self {
         Cpu {
-            pc: null_mut(),
+            pc: 0,
             x: [0; 32],
             f: [0.0; 32],
             xlen: Xlen::Bit64,
             csr: [0; CSR_CAPACITY],
             reservation: 0,
             is_reservation_set: false,
-            stack: None,
             ecall_handler: None
         }
     }
 
-    pub fn fetch(&mut self) -> u32 {
-        unsafe {
-            let result = *(self.pc as *const u32);
-            match result & 3 {
-                3 => {
-                    self.pc = self.pc.add(4);
+    pub fn fetch(&mut self, memory: &dyn Memory) -> Result<u32, Trap> {
+        let result = memory.read_u32(self.pc)?;
+        match result & 3 {
+            3 => {
+                self.pc = self.pc + 4;
 
-                    result
-                },
-                _ => {
-                    self.pc = self.pc.add(2);
+                Ok(result)
+            },
+            _ => {
+                self.pc = self.pc + 2;
 
-                    Cpu::uncompress(result & 0xffff)
-                }
+                Ok(Cpu::uncompress(result & 0xffff))
             }
         }
     }
 
-    pub fn update_pc(&mut self, new_pc: *mut u32) {
-        self.pc = new_pc as *mut u8;
+    pub fn update_pc(&mut self, new_pc: usize) {
+        self.pc = new_pc;
     }
 
     pub fn set_ecall_handler(&mut self, handler: Option<Instruction>) {
@@ -264,25 +259,17 @@ impl Cpu {
         self.x[register as usize] = value;
     }
 
-    pub fn set_stack(&mut self, stack: Vec<u8>) {
-        let len = stack.len();
-        let sp = stack.as_ptr() as i64;
-        self.stack = Some(stack);
-        // the stack moves grows in a downwards direction apparently
-        self.x[Register::SP as usize] = sp + len as i64;
+    pub fn update_stack_pointer(&mut self, stack_pointer: usize) {
+        self.x[Register::SP as usize] = stack_pointer as i64;
     }
 
-    pub fn remove_stack(&mut self) {
-        self.stack = None;
-        self.x[Register::SP as usize] = 0;
-    }
-    pub fn tick(&mut self) -> Result<(), Trap> {
+    pub fn tick(&mut self, memory: &mut dyn Memory) -> Result<(), Trap> {
         let instruction_address = self.pc;
         self.csr[CSR_TIME_ADDRESS as usize] = self.csr[CSR_TIME_ADDRESS as usize].wrapping_add(1);
 
-        let word = self.fetch();
+        let word = self.fetch(memory)?;
         if let Some(instruction) = Cpu::decode(word) {
-            let result = (instruction.operation)(self, word, instruction_address);
+            let result = (instruction.operation)(self, memory, word, instruction_address);
             self.x[0] = 0; // make sure x0 is still zero!
 
             result
@@ -1316,7 +1303,7 @@ impl Cpu {
 
 pub const UNIMPLEMENTED: Instruction = Instruction {
     name: "UNIMP",
-    operation: |_cpu, word, _address| {
+    operation: |_cpu, _memory, word, _address| {
         Err(Trap{
             trap_type: TrapType::IllegalInstruction,
             value: word as u64
@@ -1327,8 +1314,8 @@ pub const UNIMPLEMENTED: Instruction = Instruction {
 // while this is a "machine" mode instruction it is needed for the official tests to pass
 const MRET: Instruction = Instruction {
     name: "MRET",
-    operation: |cpu, _word, _address| {
-        cpu.pc = cpu.read_csr(CSR_MEPC_ADDRESS) as *mut u8;
+    operation: |cpu, _memory, _word, _address| {
+        cpu.pc = cpu.read_csr(CSR_MEPC_ADDRESS) as usize;
 
         let status = cpu.read_csr(CSR_MSTATUS_ADDRESS);
         let mpie = (status >> 7) & 1;
@@ -1349,11 +1336,11 @@ mod test_cpu {
     #[test]
     fn babys_first_instruction() {
         let mut cpu = Cpu::new();
-        let mut instruction= vec![0x00000505]; // addi a0,a0,1
-        cpu.update_pc(&mut instruction[0]);
+        let mut instruction: Vec<u8> = vec![0x05, 0x05, 0x00, 0x00]; // addi a0,a0,1
+        cpu.update_pc(0);
         let pc1 = cpu.get_pc();
         assert_eq!(cpu.x[10], 0);
-        cpu.tick().ok().expect("cpu failure");
+        cpu.tick(&mut instruction).ok().expect("cpu failure");
         assert_eq!(cpu.x[10], 1);
         let pc2 = cpu.get_pc();
         assert_eq!(2, pc2 - pc1);
@@ -1362,13 +1349,13 @@ mod test_cpu {
     #[test]
     fn two_compressed_instruction() {
         let mut cpu = Cpu::new();
-        let mut instruction= vec![0x05050505];
-        cpu.update_pc(&mut instruction[0]);
+        let mut instruction: Vec<u8> = vec![0x05, 0x05, 0x05, 0x05];
+        cpu.update_pc(0);
         let pc1 = cpu.get_pc();
         assert_eq!(cpu.x[10], 0);
-        cpu.tick().ok().expect("cpu failure");
+        cpu.tick(&mut instruction).ok().expect("cpu failure");
         assert_eq!(cpu.x[10], 1);
-        cpu.tick().ok().expect("cpu failure");
+        cpu.tick(&mut instruction).ok().expect("cpu failure");
         assert_eq!(cpu.x[10], 2);
         let pc2 = cpu.get_pc();
         assert_eq!(4, pc2 - pc1);
