@@ -2,7 +2,7 @@
 name = "user-mode-riscv"
 version = "0.1.0"
 authors = ["Daniel Parnell <me@danielparnell.com>"]
-edition = "2018"
+edition = "2021"
 
 readme = "README.md"
 repository = "https://github.com/dparnell/user-mode-riscv"
@@ -15,4 +15,4 @@ description = "RISCV CPU emulation focusing on user mode instructions only"
 [dependencies]
 
 [dev-dependencies]
-elfloader = "0.11.0"
+elfloader = "0.16.0"

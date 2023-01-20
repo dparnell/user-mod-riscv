@@ -29,7 +29,7 @@ mod test {
     }
 
     impl <'a> ElfLoader for RVTestElfLoader<'a> {
-        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), &'static str> {
+        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), ElfLoaderErr> {
             for header in load_headers {
                 if header.virtual_addr() < self.img_base {
                     self.img_base = header.virtual_addr();
@@ -39,7 +39,7 @@ mod test {
             Ok(())
         }
 
-        fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), &'static str> {
+        fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), ElfLoaderErr> {
             let start = base - self.img_base;
             let end = start + region.len() as u64;
 
@@ -51,15 +51,15 @@ mod test {
 
                 Ok(())
             } else {
-                Err("Image will not fit")
+                Err(ElfLoaderErr::OutOfMemory)
             }
         }
 
-        fn relocate(&mut self, _entry: &Rela<P64>) -> Result<(), &'static str> {
+        fn relocate(&mut self, _entry: RelocationEntry) -> Result<(), ElfLoaderErr> {
             // let typ = TypeRela64::from(entry.get_type());
             // let addr: *mut u64 = (self.vbase + entry.get_offset()) as *mut u64;
 
-            Err("Unexpected relocation encountered")
+            Err(ElfLoaderErr::UnsupportedRelocationEntry)
 
         }
 
@@ -69,12 +69,12 @@ mod test {
             _tdata_length: u64,
             _total_size: u64,
             _align: u64
-        ) -> Result<(), &'static str> {
+        ) -> Result<(), ElfLoaderErr> {
             // let tls_end = tdata_start +  total_size;
             // println!("Initial TLS region is at = {:#x} -- {:#x}", tdata_start, tls_end);
             //Ok(())
 
-            Err("TLS region")
+            Err(ElfLoaderErr::UnsupportedSectionData)
         }
 
     }
@@ -83,7 +83,7 @@ mod test {
         let mut target: Vec<u8> = Vec::new();
         target.resize(MAX_SIZE + STACK_SIZE, 0);
 
-        let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
+        let binary = ElfBinary::new(binary_blob).expect("Got proper ELF file");
         let mut loader = RVTestElfLoader::new(&mut target);
         binary.load(&mut loader).expect("Can't load the binary?");
         let img_base = loader.img_base;
