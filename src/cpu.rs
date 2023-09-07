@@ -8,6 +8,7 @@ use rv64ui::*;
 use rv64um::*;
 use std::fmt::{Debug, Formatter};
 use std::fmt;
+use std::ops::Shl;
 
 pub mod instruction;
 mod rv64ui;
@@ -228,7 +229,17 @@ impl Cpu {
 
     pub fn fetch(&mut self) -> u32 {
         unsafe {
-            let result = *(self.pc as *const u32);
+            let result = if (self.pc as usize) & 3 == 0 {
+                *(self.pc as *const u32)
+            } else {
+                let a = *(self.pc) as u32;
+                let b = *(self.pc.add(1)) as u32;
+                let c = *(self.pc.add(2)) as u32;
+                let d = *(self.pc.add(3)) as u32;
+
+                d.shl(24) | c.shl(16) | b.shl(8) | a
+            };
+
             match result & 3 {
                 3 => {
                     self.pc = self.pc.add(4);
