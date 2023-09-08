@@ -7,7 +7,7 @@ pub const SIGNALING_NAN: u64 = 0x7fff000000000000;
 
 pub const FADD_D: Instruction = Instruction {
     name: "FADD.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.f[f.rs1] + cpu.f[f.rs2];
         Ok(())
@@ -16,7 +16,7 @@ pub const FADD_D: Instruction = Instruction {
 
 pub const FCVT_D_L: Instruction = Instruction {
     name: "FCVT.D.L",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.x[f.rs1] as f64;
         Ok(())
@@ -25,7 +25,7 @@ pub const FCVT_D_L: Instruction = Instruction {
 
 pub const FCVT_D_LU: Instruction = Instruction {
     name: "FCVT.D.LU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.x[f.rs1] as u64 as f64;
         Ok(())
@@ -34,7 +34,7 @@ pub const FCVT_D_LU: Instruction = Instruction {
 
 pub const FCVT_D_S: Instruction = Instruction {
     name: "FCVT.D.S",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.get_f32(f.rs1);
         if v.is_nan() {
@@ -48,7 +48,7 @@ pub const FCVT_D_S: Instruction = Instruction {
 
 pub const FCVT_D_W: Instruction = Instruction {
     name: "FCVT.D.W",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.x[f.rs1] as i32 as f64;
         Ok(())
@@ -57,7 +57,7 @@ pub const FCVT_D_W: Instruction = Instruction {
 
 pub const FCVT_D_WU: Instruction = Instruction {
     name: "FCVT.D.WU",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.x[f.rs1] as u32 as f64;
         Ok(())
@@ -66,7 +66,7 @@ pub const FCVT_D_WU: Instruction = Instruction {
 
 pub const FCVT_S_D: Instruction = Instruction {
     name: "FCVT.S.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.set_f32(f.rd,cpu.f[f.rs1] as f32);
         Ok(())
@@ -75,7 +75,7 @@ pub const FCVT_S_D: Instruction = Instruction {
 
 pub const FCVT_W_D: Instruction = Instruction {
     name: "FCVT.W.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.f[f.rs1];
 
@@ -98,7 +98,7 @@ pub const FCVT_W_D: Instruction = Instruction {
 
 pub const FDIV_D: Instruction = Instruction {
     name: "FDIV.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let dividend = cpu.f[f.rs1];
         let divisor = cpu.f[f.rs2];
@@ -118,7 +118,7 @@ pub const FDIV_D: Instruction = Instruction {
 
 pub const FEQ_D: Instruction = Instruction {
     name: "FEQ.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = match cpu.f[f.rs1] == cpu.f[f.rs2] {
             true => 1,
@@ -130,7 +130,7 @@ pub const FEQ_D: Instruction = Instruction {
 
 pub const FLE_D: Instruction = Instruction {
     name: "FLE.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.f[f.rs1];
         let v2 = cpu.f[f.rs2];
@@ -148,7 +148,7 @@ pub const FLE_D: Instruction = Instruction {
 
 pub const FLT_D: Instruction = Instruction {
     name: "FLT.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.f[f.rs1];
         let v2 = cpu.f[f.rs2];
@@ -166,7 +166,7 @@ pub const FLT_D: Instruction = Instruction {
 
 pub const FMADD_D: Instruction = Instruction {
     name: "FMADD.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         // @TODO: Update fcsr if needed?
         let f = instruction::parse_format_r2(word);
         cpu.f[f.rd] = cpu.f[f.rs1] * cpu.f[f.rs2] + cpu.f[f.rs3];
@@ -176,7 +176,7 @@ pub const FMADD_D: Instruction = Instruction {
 
 pub const FMSUB_D: Instruction = Instruction {
     name: "FMSUB.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         // @TODO: Update fcsr if needed?
         let f = instruction::parse_format_r2(word);
         cpu.f[f.rd] = cpu.f[f.rs1] * cpu.f[f.rs2] - cpu.f[f.rs3];
@@ -187,7 +187,7 @@ pub const FMSUB_D: Instruction = Instruction {
 
 pub const FMUL_D: Instruction = Instruction {
     name: "FMUL.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         // @TODO: Update fcsr if needed?
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = cpu.f[f.rs1] * cpu.f[f.rs2];
@@ -197,7 +197,7 @@ pub const FMUL_D: Instruction = Instruction {
 
 pub const FMV_D_X: Instruction = Instruction {
     name: "FMV.D.X",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.f[f.rd] = f64::from_bits(cpu.x[f.rs1] as u64);
         Ok(())
@@ -206,7 +206,7 @@ pub const FMV_D_X: Instruction = Instruction {
 
 pub const FMV_X_D: Instruction = Instruction {
     name: "FMV.X.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         cpu.x[f.rd] = cpu.f[f.rs1].to_bits() as i64;
         Ok(())
@@ -215,7 +215,7 @@ pub const FMV_X_D: Instruction = Instruction {
 
 pub const FNMADD_D: Instruction = Instruction {
     name: "FNMADD.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r2(word);
         cpu.f[f.rd] = -(cpu.f[f.rs1] * cpu.f[f.rs2]) - cpu.f[f.rs3];
         Ok(())
@@ -224,7 +224,7 @@ pub const FNMADD_D: Instruction = Instruction {
 
 pub const FNMSUB_D: Instruction = Instruction {
     name: "FNMSUB.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r2(word);
         cpu.f[f.rd] = -(cpu.f[f.rs1] * cpu.f[f.rs2]) + cpu.f[f.rs3];
         Ok(())
@@ -233,29 +233,24 @@ pub const FNMSUB_D: Instruction = Instruction {
 
 pub const FSD: Instruction = Instruction {
     name: "FSD",
-    operation: |cpu, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_s(word);
-        unsafe {
-            *(cpu.x[f.rs1].wrapping_add(f.imm) as *mut u64) = cpu.f[f.rs2].to_bits();
-        }
-        Ok(())
+        memory.write_u64(cpu.x[f.rs1].wrapping_add(f.imm) as usize, cpu.f[f.rs2].to_bits())
     }
 };
 
 pub const FLD: Instruction = Instruction {
     name: "FLD",
-    operation: |cpu, word, _address| {
+    operation: |cpu, memory, word, _address| {
         let f = instruction::parse_format_i(word);
-        unsafe {
-            cpu.f[f.rd] = f64::from_bits(*((cpu.x[f.rs1].wrapping_add(f.imm) as u64) as *const u64));
-        }
+        cpu.f[f.rd] = f64::from_bits(memory.read_u64(cpu.x[f.rs1].wrapping_add(f.imm) as usize)?);
         Ok(())
     }
 };
 
 pub const FSUB_D: Instruction = Instruction {
     name: "FSUB.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.f[f.rs1];
         let v2 = cpu.f[f.rs2];
@@ -273,7 +268,7 @@ pub const FSUB_D: Instruction = Instruction {
 
 pub const FSQRT_D: Instruction = Instruction {
     name: "FSQRT.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
 
         let v = cpu.f[f.rs1];
@@ -289,7 +284,7 @@ pub const FSQRT_D: Instruction = Instruction {
 
 pub const FSGNJ_D: Instruction = Instruction {
     name: "FSGNJ.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let rs1_bits = cpu.f[f.rs1].to_bits();
         let rs2_bits = cpu.f[f.rs2].to_bits();
@@ -301,7 +296,7 @@ pub const FSGNJ_D: Instruction = Instruction {
 
 pub const FSGNJN_D: Instruction = Instruction {
     name: "FSGNJN.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let rs1_bits = cpu.f[f.rs1].to_bits();
         let rs2_bits = cpu.f[f.rs2].to_bits();
@@ -313,7 +308,7 @@ pub const FSGNJN_D: Instruction = Instruction {
 
 pub const FSGNJX_D: Instruction = Instruction {
     name: "FSGNJX.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let rs1_bits = cpu.f[f.rs1].to_bits();
         let rs2_bits = cpu.f[f.rs2].to_bits();
@@ -326,7 +321,7 @@ pub const FSGNJX_D: Instruction = Instruction {
 
 pub const FMIN_D: Instruction = Instruction {
     name: "FMIN.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.f[f.rs1];
         let v2 = cpu.f[f.rs2];
@@ -365,7 +360,7 @@ pub const FMIN_D: Instruction = Instruction {
 
 pub const FMAX_D: Instruction = Instruction {
     name: "FMAX.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v1 = cpu.f[f.rs1];
         let v2 = cpu.f[f.rs2];
@@ -403,7 +398,7 @@ pub const FMAX_D: Instruction = Instruction {
 
 pub const FCVT_WU_D: Instruction = Instruction {
     name: "FCVT.WU.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.f[f.rs1];
 
@@ -435,7 +430,7 @@ pub const FCVT_WU_D: Instruction = Instruction {
 
 pub const FCVT_L_D: Instruction = Instruction {
     name: "FCVT.L.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.f[f.rs1];
 
@@ -454,7 +449,7 @@ pub const FCVT_L_D: Instruction = Instruction {
 
 pub const FCVT_LU_D: Instruction = Instruction {
     name: "FCVT.LU.D",
-    operation: |cpu, word, _address| {
+    operation: |cpu, _memory, word, _address| {
         let f = instruction::parse_format_r(word);
         let v = cpu.f[f.rs1];
 

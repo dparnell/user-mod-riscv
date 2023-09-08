@@ -1,4 +1,5 @@
 pub mod cpu;
+pub mod memory;
 
 #[cfg(test)]
 mod test {
@@ -11,28 +12,24 @@ mod test {
     use std::io::Write;
 
     const MAX_SIZE: usize = 1024 * 128;
-    struct RVTestElfLoader {
-        target: [u8; MAX_SIZE],
-        pub img_base: u64
+    const STACK_SIZE: usize = 1024 * 16;
+
+    struct RVTestElfLoader<'a> {
+        pub img_base: u64,
+        target: &'a mut [u8]
     }
 
-    impl RVTestElfLoader {
-        pub fn new() -> Self {
+    impl <'a> RVTestElfLoader<'a> {
+        pub fn new(target: &'a mut [u8]) -> Self {
             RVTestElfLoader {
-                target: [0; MAX_SIZE],
-                img_base: u64::MAX
-            }
-        }
-
-        pub fn get_target(&mut self) -> *mut u32 {
-            unsafe {
-                std::mem::transmute::<&u8, *mut u32>(&self.target[0])
+                img_base: u64::MAX,
+                target
             }
         }
     }
 
-    impl ElfLoader for RVTestElfLoader {
-        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), &'static str> {
+    impl <'a> ElfLoader for RVTestElfLoader<'a> {
+        fn allocate(&mut self, load_headers: LoadableHeaders) -> Result<(), ElfLoaderErr> {
             for header in load_headers {
                 if header.virtual_addr() < self.img_base {
                     self.img_base = header.virtual_addr();
@@ -42,15 +39,7 @@ mod test {
             Ok(())
         }
 
-        fn relocate(&mut self, _entry: &Rela<P64>) -> Result<(), &'static str> {
-            // let typ = TypeRela64::from(entry.get_type());
-            // let addr: *mut u64 = (self.vbase + entry.get_offset()) as *mut u64;
-
-            Err("Unexpected relocation encountered")
-
-        }
-
-        fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), &'static str> {
+        fn load(&mut self, _flags: Flags, base: VAddr, region: &[u8]) -> Result<(), ElfLoaderErr> {
             let start = base - self.img_base;
             let end = start + region.len() as u64;
 
@@ -62,8 +51,16 @@ mod test {
 
                 Ok(())
             } else {
-                Err("Image will not fit")
+                Err(ElfLoaderErr::OutOfMemory)
             }
+        }
+
+        fn relocate(&mut self, _entry: RelocationEntry) -> Result<(), ElfLoaderErr> {
+            // let typ = TypeRela64::from(entry.get_type());
+            // let addr: *mut u64 = (self.vbase + entry.get_offset()) as *mut u64;
+
+            Err(ElfLoaderErr::UnsupportedRelocationEntry)
+
         }
 
         fn tls(
@@ -72,19 +69,22 @@ mod test {
             _tdata_length: u64,
             _total_size: u64,
             _align: u64
-        ) -> Result<(), &'static str> {
+        ) -> Result<(), ElfLoaderErr> {
             // let tls_end = tdata_start +  total_size;
             // println!("Initial TLS region is at = {:#x} -- {:#x}", tdata_start, tls_end);
             //Ok(())
 
-            Err("TLS region")
+            Err(ElfLoaderErr::UnsupportedSectionData)
         }
 
     }
 
     fn run_test(binary_blob: &[u8]) {
-        let binary = ElfBinary::new("test", binary_blob).expect("Got proper ELF file");
-        let mut loader = RVTestElfLoader::new();
+        let mut target: Vec<u8> = Vec::new();
+        target.resize(MAX_SIZE + STACK_SIZE, 0);
+
+        let binary = ElfBinary::new(binary_blob).expect("Got proper ELF file");
+        let mut loader = RVTestElfLoader::new(&mut target);
         binary.load(&mut loader).expect("Can't load the binary?");
         let img_base = loader.img_base;
 
@@ -93,7 +93,7 @@ mod test {
         let mut cpu = Cpu::new();
         cpu.set_ecall_handler(Some(Instruction{
             name: "ECALL",
-            operation: |cpu, _word, _address| {
+            operation: |cpu, _memory, _word, _address| {
                 match cpu.get_register(Register::A7) {
                     64 => Ok(()), // WRITE
                     93 => Err(Trap { trap_type: TrapType::Stop, value: cpu.get_register(Register::A0) as u64 }),
@@ -102,13 +102,8 @@ mod test {
             }
         }));
 
-        let img = loader.get_target();
-        let base_pc = img as usize;
-        let entry_point = (base_pc as u64 + entry_point_offset) as *mut u32;
-        cpu.update_pc(entry_point);
-        let mut stack = Vec::with_capacity(1024*1024);
-        stack.resize(1024*1024, 0);
-        cpu.set_stack(stack);
+        cpu.update_pc(entry_point_offset as usize);
+        cpu.update_stack_pointer(MAX_SIZE + STACK_SIZE - 1);
         let mut fuel = 1_000_000_000;
 
         let dump_instructions = std::env::var("DUMP_INSTRUCTIONS").is_ok();
@@ -116,11 +111,11 @@ mod test {
         let mut old_f = cpu.f.clone();
 
         loop {
-            let pc = cpu.get_pc() - base_pc + img_base as usize;
+            let pc = cpu.get_pc();
 
             if dump_instructions {
                 let saved = cpu.pc;
-                let op = cpu.fetch();
+                let op = cpu.fetch(&target).expect("instruction fetch failed");
                 let inst = Cpu::decode(op);
                 cpu.pc = saved;
 
@@ -155,7 +150,7 @@ mod test {
                 std::io::stdout().flush().expect("flush");
             }
 
-            match cpu.tick() {
+            match cpu.tick(&mut target) {
                 Ok(_) => {
                     fuel = fuel - 1;
                     if fuel == 0 {
